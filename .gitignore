@@ -1,0 +1,15 @@
+# Dependency directories
+node_modules/
+
+# Environment variables
+.env
+
+# MacOS specific
+.DS_Store
+
+# Archives
+*.zip
+*.tar.gz
+
+# OpenClaw specific (if any)
+# media/
