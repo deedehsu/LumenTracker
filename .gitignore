@@ -13,3 +13,10 @@ node_modules/
 
 # OpenClaw specific (if any)
 # media/
+
+# Ignore log files
+*.log
+
+# Ignore specific log/state JSON files
+memory/*.json
+prototype/backend/*.json
