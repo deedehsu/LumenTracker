@@ -38,6 +38,7 @@ document.getElementById('btnSaveIdentity').addEventListener('click', () => {
 document.getElementById('btnAddWallet').addEventListener('click', () => {
     const address = document.getElementById('inputWallet').value.trim();
     const tag = document.getElementById('inputWalletTag').value;
+    const note = document.getElementById('inputWalletNote').value.trim();
 
     if(!address) return;
     if(sessionState.caseInfo.wallets.find(w => w.address === address)) {
@@ -45,9 +46,10 @@ document.getElementById('btnAddWallet').addEventListener('click', () => {
         return;
     }
 
-    sessionState.caseInfo.wallets.push({ address, tag });
+    sessionState.caseInfo.wallets.push({ address, tag, note });
     document.getElementById('inputWallet').value = ''; 
     document.getElementById('inputWalletTag').value = '';
+    document.getElementById('inputWalletNote').value = '';
     renderWalletList();
 });
 
@@ -61,6 +63,7 @@ function renderWalletList() {
             <div class="flex items-center gap-3">
                 <span class="font-mono text-sm break-all text-blue-800 font-bold">${w.address}</span>
                 ${w.tag ? `<span class="text-xs bg-yellow-100 border border-yellow-300 px-2 py-1 rounded text-yellow-800 font-bold">🏷️ ${w.tag}</span>` : ''}
+                ${w.note ? `<span class="text-xs text-gray-500 ml-2">📝 ${w.note}</span>` : ''}
             </div>
             <button onclick="removeWallet(${index})" class="text-red-500 hover:text-red-700 text-sm font-bold ml-4 shrink-0 px-2">移除</button>
         `;
@@ -75,9 +78,35 @@ window.removeWallet = function(index) {
 };
 
 // ==============================
-// 介面 2-2：已知交易紀錄登記與匯率驗證 (呼叫本地伺服器)
+// 介面 2-2：已知交易紀錄登記與匯率驗證
 // ==============================
-document.getElementById('btnAddTx').addEventListener('click', async () => {
+
+// 自動計算實際交易匯率
+function calculateActualRate() {
+    const amt = parseFloat(document.getElementById('txAmountTWD').value);
+    const qty = parseFloat(document.getElementById('txQuantity').value);
+    const actualInput = document.getElementById('txActualRate');
+    
+    if(!isNaN(amt) && !isNaN(qty) && qty !== 0) {
+        actualInput.value = (amt / qty).toFixed(4);
+    } else {
+        actualInput.value = '';
+    }
+}
+document.getElementById('txAmountTWD').addEventListener('input', calculateActualRate);
+document.getElementById('txQuantity').addEventListener('input', calculateActualRate);
+
+// 教學浮窗邏輯
+document.getElementById('btnCloseMentor').addEventListener('click', () => {
+    document.getElementById('mentorPopup').classList.add('hidden');
+    document.getElementById('txUserRate').focus();
+});
+document.getElementById('btnUnderstand').addEventListener('click', () => {
+    document.getElementById('mentorPopup').classList.add('hidden');
+    document.getElementById('txUserRate').focus();
+});
+
+document.getElementById('btnAddTx').addEventListener('click', () => {
     const date = document.getElementById('txDate').value;
     const time = document.getElementById('txTime').value;
     const from = document.getElementById('txFrom').value.trim();
@@ -85,56 +114,51 @@ document.getElementById('btnAddTx').addEventListener('click', async () => {
     const amountTWD = parseFloat(document.getElementById('txAmountTWD').value);
     const coin = document.getElementById('txCoin').value.trim().toUpperCase() || 'USDT';
     const quantity = parseFloat(document.getElementById('txQuantity').value);
-    const userRate = parseFloat(document.getElementById('txUserRate').value);
+    
+    const userRateInput = document.getElementById('txUserRate').value.trim();
+    
+    // 如果沒有填寫當日匯率，直接跳出導師教學浮窗
+    if(!userRateInput) {
+        document.getElementById('mentorPopup').classList.remove('hidden');
+        return;
+    }
+    
+    const userRate = parseFloat(userRateInput);
 
     if(!date || isNaN(amountTWD) || isNaN(quantity) || isNaN(userRate) || !coin) {
         alert("🚨 請填寫完整的交易日期、金額(TWD)、幣種、數量與您計算的當日匯率。");
         return;
     }
 
-    const actualRate = (amountTWD / quantity).toFixed(2);
+    const actualRate = (amountTWD / quantity).toFixed(4);
 
-    try {
-        // 呼叫我們剛剛寫的本地 Node.js 伺服器，由它去打幣安的免費 API
-        const response = await fetch(`http://localhost:3000/api/history/price?symbol=${coin}&date=${date}`);
-        const result = await response.json();
+    // 系統模擬驗證邏輯 (純靜態測試版)
+    let systemRate = 31.50; 
+    if(coin === 'BTC') systemRate = 2000000;
+    if(coin === 'ETH') systemRate = 100000;
+    if(coin === 'TRX') systemRate = 3.5;
 
-        if (response.ok && result.average) {
-            const systemRate = result.average;
-            const diff = Math.abs(userRate - systemRate) / systemRate;
-            
-            // 容許 5% 的誤差範圍
-            if (diff > 0.05) {
-                alert(`🚨 驗證失敗！\n\n您輸入的匯率 (${userRate}) 與系統呼叫真實交易所 API 抓取的歷史日均線匯率 (${systemRate.toFixed(4)}) 誤差超過 5%。\n\n請重新檢視計算過程：\n1. 是否選錯幣種？\n2. 是否選錯日期 (${date})？\n3. 是否正確計算 (最高價 + 最低價) ÷ 2？`);
-                return; // 拒絕新增
-            }
-
-            const tx = {
-                date, time, from, to, amountTWD, coin, quantity, actualRate, userRate, 
-                systemRate: systemRate.toFixed(4)
-            };
-
-            sessionState.caseInfo.transactions.push(tx);
-            
-            // 清空輸入
-            document.getElementById('txAmountTWD').value = '';
-            document.getElementById('txQuantity').value = '';
-            document.getElementById('txUserRate').value = '';
-
-            renderTxList();
-        } else {
-            alert("⚠️ 系統無法取得該日期的歷史報價，暫以使用者填寫為主。");
-            const tx = {
-                date, time, from, to, amountTWD, coin, quantity, actualRate, userRate, 
-                systemRate: "無法取得"
-            };
-            sessionState.caseInfo.transactions.push(tx);
-            renderTxList();
-        }
-
-    } catch (e) {
-        alert("❌ 無法連線至本地證據保全伺服器。請確認伺服器已啟動。");
+    const diff = Math.abs(userRate - systemRate) / systemRate;
+    
+    if (diff > 0.05) {
+        alert(`🚨 驗證失敗！\n\n您輸入的匯率 (${userRate}) 與系統模擬的合理市價 (${systemRate}) 誤差超過 5%。\n\n(此為純靜態測試版，請輸入接近 ${systemRate} 的數字以通過防呆測試)`);
+        return; // 拒絕新增
     }
+
+    const tx = {
+        date, time, from, to, amountTWD, coin, quantity, actualRate, userRate, 
+        systemRate: systemRate.toFixed(2)
+    };
+
+    sessionState.caseInfo.transactions.push(tx);
+    
+    // 清空輸入
+    document.getElementById('txAmountTWD').value = '';
+    document.getElementById('txQuantity').value = '';
+    document.getElementById('txUserRate').value = '';
+    document.getElementById('txActualRate').value = '';
+
+    renderTxList();
 });
 
 function renderTxList() {
@@ -148,8 +172,8 @@ function renderTxList() {
             <td class="p-2 font-mono text-xs"><div class="truncate w-24 text-gray-500" title="${tx.from}">${tx.from||'-'}</div> ➔ <div class="truncate w-24 text-blue-600 font-bold" title="${tx.to}">${tx.to||'-'}</div></td>
             <td class="p-2 font-bold text-red-600">NT$ ${tx.amountTWD.toLocaleString()}</td>
             <td class="p-2">${tx.quantity} ${tx.coin}</td>
-            <td class="p-2 bg-yellow-50 font-bold">${tx.actualRate}</td>
-            <td class="p-2 bg-blue-50"><span class="text-green-600 font-bold" title="系統底層查核通過 (系統值: ${tx.systemRate})">✅ ${tx.userRate}</span></td>
+            <td class="p-2 bg-blue-50 font-bold text-blue-700">${tx.actualRate}</td>
+            <td class="p-2 bg-red-50"><span class="text-green-600 font-bold" title="系統模擬底層查核通過">✅ ${tx.userRate}</span></td>
             <td class="p-2"><button onclick="removeTx(${index})" class="text-red-500 hover:text-red-700 text-xs font-bold border border-red-300 rounded px-2 py-1 bg-red-50">移除</button></td>
         `;
         list.appendChild(tr);
@@ -178,6 +202,6 @@ document.getElementById('btnStartTriage').addEventListener('click', () => {
     alert("✅ 案件資本資料已加密封裝！\n\n" +
           "調查員: " + sessionState.investigator.unit + " " + sessionState.investigator.name + "\n" +
           "總計涉案地址: " + sessionState.caseInfo.wallets.length + " 個\n" +
-          "總計交易紀錄: " + sessionState.caseInfo.transactions.length + " 筆 (皆已通過匯率真實API驗證)\n\n" +
+          "總計交易紀錄: " + sessionState.caseInfo.transactions.length + " 筆 (皆已通過模擬驗證)\n\n" +
           "下一步將進入【初勘室】進行各地址分析 (功能待整合)。");
 });
