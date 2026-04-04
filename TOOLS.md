@@ -35,6 +35,11 @@ Things like:
 
 Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without leaking your infrastructure.
 
+
+## Security Audit Tools
+
+- 在 Commit 前，必須檢查是否存在 .env 或明文金鑰洩漏。可以使用 bandit 進行掃描。
+
 ---
 
 Add whatever helps you do your job. This is your cheat sheet.
