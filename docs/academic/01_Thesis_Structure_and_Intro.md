@@ -1,8 +1,7 @@
 # 論文大綱結構與第一章草稿 (Thesis Structure and Introduction)
 
-## 論文標題 (暫定)
-**《虛擬資產幣流查緝與洗錢態樣分析之實證研究－以區塊鏈分析與風險評分模型為核心》**
-*(An Empirical Study on Virtual Asset Flow Tracking and Money Laundering Typologies: Centered on Blockchain Analysis and Risk Scoring Models)*
+## 論文標題
+**From Investigative Steps to Legal Proof: A Guided Blockchain Forensic System with Localized Evidence Preservation**
 
 ## 論文大綱結構 (基於設計科學研究法 Design Science Research, DSR)
 
@@ -10,45 +9,41 @@
 
 論文大綱結構如下：
 
-*   **第一章：緒論 (Introduction)**
-    *   1.1 研究背景與動機 (加密貨幣犯罪追查困境、傳統軟體黑箱與偵查不公開問題)
-    *   1.2 研究目的與範圍 (建構單機 BYOK 分析工具、建立風險評分模型)
-    *   1.3 研究限制 (零預算開發、資料來源限制)
-    *   1.4 論文架構
-*   **第二章：文獻探討 (Literature Review)**
-    *   2.1 加密貨幣犯罪與常見洗錢態樣 (混幣行為、跨鏈操作、合約授權)
-    *   2.2 現行區塊鏈分析工具與數位鑑識困境
-    *   2.3 證據同一性與法庭展演 (Courtroom Replay) 的司法需求
-    *   2.4 風險評分模型在區塊鏈分析之應用
-*   **第三章：研究方法 (Research Methodology)**
-    *   3.1 設計科學研究法 (Design Science Research) 概述
-    *   3.2 系統化幣流查緝與風險評估模型建構
-*   **第四章：系統設計與實作 (Design and Development of the Artifact)**
-    *   4.1 系統架構與安全設計 (零知識/無痕架構、本地加密儲存)
-    *   4.2 基於雜湊演算法 (Hash) 之證據同一性與傳遞鏈保全設計
-    *   4.3 洗錢態樣分析與風險評分模型實作 (自動化防呆與初勘特徵計分)
-    *   4.4 幣流關聯圖建構與法庭展演模式 (Courtroom Replay) 實作
-*   **第五章：系統展示與評估 (Demonstration and Evaluation)**
-    *   5.1 案例情境模擬 (實證研究：導入真實洗錢案件)
-    *   5.2 風險評分模型效度與防呆機制驗證
-    *   5.3 法庭證據標準符合度評估 (不可篡改性、可重現性)
-*   **第六章：討論與結論 (Discussion and Conclusion)**
-    *   6.1 研究貢獻 (提出具體之風險評估模型與本土化實證工具)
-    *   6.2 系統限制與未來研究方向
-    *   6.3 總結
+*   **1. Introduction (緒論)**
+    *   1.1 Research Background and Motivation (研究背景與動機)
+    *   1.2 Research Objectives (研究目的)
+    *   1.3 Research Limitations (研究限制)
+    *   1.4 Thesis Structure (論文架構)
+*   **2. Background and Literature Review (背景與文獻回顧)**
+    *   2.1 Current State of Blockchain Forensics Technology (區塊鏈鑑識技術發展現況)
+    *   2.2 Digital Evidence Standards and Judicial Challenges (數位證據標準與司法挑戰)
+    *   2.3 Application Potential of Serverless Architecture in Forensics (無伺服器架構在鑑識領域的應用潛力)
+    *   2.4 Forensic Science and Visual Presentation (鑑識科學與視覺化呈現)
+*   **3. Research Questions and Goals (研究問題與目標)**
+    *   3.1 Research Questions (研究問題)
+    *   3.2 Research Objectives (研究目的)
+*   **4. Research Methodology and System Design (研究方法與系統設計)**
+    *   4.1 System Architecture (系統架構)
+    *   4.2 Key Feature Implementation (關鍵功能實作)
+    *   4.3 Security and Evidence Preservation (資安與證據保全)
+    *   4.4 Forensic Integrity Mechanisms (鑑識完整性機制)
+*   **5. Expected Contributions (預期貢獻)**
+    *   Academic (學術貢獻)
+    *   Technical (技術貢獻)
+    *   Practical (實務貢獻)
 
 ---
 
-## 第一章：緒論 (Introduction) 草稿
+## 第一章：緒論 (Introduction)
 
 ### 1.1 研究背景與動機
 
 近年來，詐欺集團及跨境犯罪廣泛利用虛擬資產（加密貨幣）進行資金轉移，由於其去中心化與偽匿名的特性，大幅增加了資金斷點與執法機關的偵查難度。執法機關在追查加密貨幣金流時，面臨著前所未有的挑戰。
 
-傳統上，執法單位高度依賴商業化的區塊鏈分析軟體（如 Chainalysis、TRM等）。然而，這些現行解決方案存在幾項顯著的困境，成為本研究的核心動機：
+傳統上，執法單位高度依賴商業化的區塊鏈分析軟體（如 Chainalysis 等）。然而，這些現行解決方案存在幾項顯著的困境，成為本研究的核心動機：
 1.  **洗錢態樣繁複且學習曲線陡峭**：犯罪集團常使用混幣行為（Mixers）、跨鏈操作（Cross-chain Bridges）等進階態樣，基層調查員缺乏足夠知識，難以獨立判讀複雜的交易行為。
-2.  **傳統軟體昂貴且黑箱 (Black-box)**：商用軟體不僅授權費高昂，其風險評分演算法多屬商業機密。這導致在法庭上常面臨辯方對「證據產生過程」的質疑，又商用軟體自動化追查模組，存在於邏輯推理盲區使實際操作人員在仰賴這些商用軟體時，對所得到的結論無法有效論據，難以滿足司法對證據透明度的要求。
-3.  **偵查不公開與隱私洩露風險**：使用雲端商用軟體，意味著調查員必須將嫌疑地址上傳至第三方伺服器，不慎就會有存在違反「偵查不公開」原則的風險。
+2.  **傳統軟體昂貴且黑箱 (Black-box)**：商用軟體不僅授權費高昂，其風險評分演算法多屬商業機密。這導致在法庭上常面臨辯方對「證據產生過程」的質疑，難以滿足司法對證據透明度的要求。
+3.  **偵查不公開與隱私洩露風險**：使用雲端商用軟體，意味著調查員必須將嫌疑地址上傳至第三方伺服器，存在違反「偵查不公開」原則的風險。
 4.  **法庭證據轉換之挑戰**：加密貨幣交易調查往往涉及複雜交易流程、技術專有名詞與大量資料圖譜。如何將此轉化為法官與陪審團「可理解、可驗證之證據鏈」，是目前區塊鏈數位鑑識在法庭攻防上的重要挑戰。
 
 有鑑於此，開發一套能夠解析常見洗錢態樣、建立透明風險評估模型，且能將鑑識過程轉化為法庭可驗證證據的本土化實證工具，實屬當務之急。
