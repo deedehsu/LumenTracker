@@ -3,37 +3,81 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>LumenTracker - 區塊鏈幣流分析</title>
+    <title>LumenTracker - 歡迎</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             background-color: #f4f4f4;
             color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* 確保內容垂直置中 */
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            width: 90%;
             text-align: center;
         }
         h1 {
             color: #4CAF50;
+            margin-bottom: 20px;
+            font-size: 2.2em;
         }
         p {
             font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 15px;
         }
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            margin: 50px auto;
+        .disclaimer {
+            color: #888;
+            font-size: 0.9em;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        .button-group {
+            margin-top: 30px;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>歡迎使用 LumenTracker</h1>
-        <p>這是一個專為司法調查設計的單機版區塊鏈幣流分析與數位鑑識教學軟體。</p>
-        <p>程式碼開發正在進行中... 請等待後續功能實作。</p>
+        <p>為了保護您的偵查隱私與案件機密，本軟體採**完全單機運行**。</p>
+        <p>我們不會將您的任何查詢紀錄上傳至雲端伺服器。</p>
+        <p>為了開始您的調查，我們需要為您的電腦配備一把專屬的「鑰匙」。</p>
+        <div class="button-group">
+            <button class="button" id="nextButton">開始設定</button>
+        </div>
+        <p class="disclaimer">請詳閱我們的<a href="#" onclick="return false;">隱私政策與資安聲明</a></p>
     </div>
+
+    <script>
+        document.getElementById('nextButton').addEventListener('click', () => {
+            // TODO: 導向到下一個設定步驟
+            console.log('進入下一個設定步驟...');
+            alert('TODO: 進入 API Key 設定頁面');
+        });
+    </script>
 </body>
 </html>
