@@ -3,7 +3,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>LumenTracker - 歡迎</title>
+    <title>LumenTracker - 首次設定</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,7 +14,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* 確保內容垂直置中 */
+            min-height: 100vh;
         }
         .container {
             background-color: #ffffff;
@@ -30,6 +30,11 @@
             margin-bottom: 20px;
             font-size: 2.2em;
         }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
         p {
             font-size: 1.1em;
             line-height: 1.6;
@@ -44,6 +49,9 @@
         }
         .button-group {
             margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px; /* 按鈕間距 */
         }
         .button {
             background-color: #007bff;
@@ -55,28 +63,69 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
+        .button.secondary {
+            background-color: #6c757d;
+        }
         .button:hover {
             background-color: #0056b3;
+        }
+        .button.secondary:hover {
+            background-color: #545b62;
+        }
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- 畫面 1: 歡迎與資安宣告 -->
+    <div id="screen1" class="container">
         <h1>歡迎使用 LumenTracker</h1>
         <p>為了保護您的偵查隱私與案件機密，本軟體採**完全單機運行**。</p>
         <p>我們不會將您的任何查詢紀錄上傳至雲端伺服器。</p>
         <p>為了開始您的調查，我們需要為您的電腦配備一把專屬的「鑰匙」。</p>
         <div class="button-group">
-            <button class="button" id="nextButton">開始設定</button>
+            <button class="button" id="nextToScreen2Button">開始設定</button>
         </div>
         <p class="disclaimer">請詳閱我們的<a href="#" onclick="return false;">隱私政策與資安聲明</a></p>
     </div>
 
+    <!-- 畫面 2: 什麼是區塊鏈 API Key？ -->
+    <div id="screen2" class="container hidden">
+        <h2>什麼是區塊鏈 API Key？</h2>
+        <p>區塊鏈的資料是公開的，但要讀取這些資料，我們需要透過特定的通道（節點供應商）。</p>
+        <p>如果您使用我們內建的通道，您的來源可能會與其他調查員混淆，甚至面臨頻寬限制。</p>
+        <p>因此，我們將引導您申請一組**免費且專屬於您**的 API Key。</p>
+        <div class="button-group">
+            <button class="button secondary" id="backToScreen1Button">上一步</button>
+            <button class="button" id="nextToScreen3Button">繼續</button>
+        </div>
+    </div>
+
     <script>
-        document.getElementById('nextButton').addEventListener('click', () => {
-            // TODO: 導向到下一個設定步驟
-            console.log('進入下一個設定步驟...');
-            alert('TODO: 進入 API Key 設定頁面');
+        document.addEventListener('DOMContentLoaded', () => {
+            const screen1 = document.getElementById('screen1');
+            const screen2 = document.getElementById('screen2');
+
+            const nextToScreen2Button = document.getElementById('nextToScreen2Button');
+            const backToScreen1Button = document.getElementById('backToScreen1Button');
+            const nextToScreen3Button = document.getElementById('nextToScreen3Button');
+
+            nextToScreen2Button.addEventListener('click', () => {
+                screen1.classList.add('hidden');
+                screen2.classList.remove('hidden');
+            });
+
+            backToScreen1Button.addEventListener('click', () => {
+                screen2.classList.add('hidden');
+                screen1.classList.remove('hidden');
+            });
+
+            nextToScreen3Button.addEventListener('click', () => {
+                // TODO: 導向到下一個設定步驟 (API Key 申請教學)
+                console.log('進入 API Key 申請教學頁面...');
+                alert('TODO: 進入 API Key 申請教學頁面');
+            });
         });
     </script>
 </body>
