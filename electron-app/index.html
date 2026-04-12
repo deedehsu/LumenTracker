@@ -89,6 +89,11 @@
         .hidden {
             display: none;
         }
+        .checkmark {
+            color: #4CAF50;
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -135,11 +140,23 @@
         </div>
     </div>
 
+    <!-- 畫面 4: 設定完成 -->
+    <div id="screen4" class="container hidden">
+        <div class="checkmark">✅</div>
+        <h2>設定完成！</h2>
+        <p>您的專屬通道已建立。這把鑰匙已加密儲存於您的電腦中。</p>
+        <p>現在，請輸入您要追查的第一個錢包地址，我們開始破解迷宮。</p>
+        <div class="button-group">
+            <button class="button" id="startInvestigationButton">開始調查</button>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const screen1 = document.getElementById('screen1');
             const screen2 = document.getElementById('screen2');
             const screen3 = document.getElementById('screen3');
+            const screen4 = document.getElementById('screen4');
 
             const nextToScreen2Button = document.getElementById('nextToScreen2Button');
             const backToScreen1Button = document.getElementById('backToScreen1Button');
@@ -147,6 +164,7 @@
             const backToScreen2Button = document.getElementById('backToScreen2Button');
             const nextToScreen4Button = document.getElementById('nextToScreen4Button');
             const testConnectionButton = document.getElementById('testConnectionButton');
+            const startInvestigationButton = document.getElementById('startInvestigationButton');
 
             nextToScreen2Button.addEventListener('click', () => {
                 screen1.classList.add('hidden');
@@ -168,6 +186,13 @@
                 screen2.classList.remove('hidden');
             });
 
+            nextToScreen4Button.addEventListener('click', () => {
+                // TODO: 執行 API Key 安全儲存邏輯
+                console.log('進入設定完成頁面...');
+                screen3.classList.add('hidden');
+                screen4.classList.remove('hidden');
+            });
+
             testConnectionButton.addEventListener('click', () => {
                 const apiKey = document.getElementById('apiKeyInput').value;
                 // TODO: 實現 API Key 連線測試邏輯
@@ -175,10 +200,10 @@
                 alert('TODO: 執行 API Key 連線測試');
             });
 
-            nextToScreen4Button.addEventListener('click', () => {
-                // TODO: 導向到下一個設定步驟 (設定完成畫面)
-                console.log('進入設定完成頁面...');
-                alert('TODO: 進入設定完成頁面');
+            startInvestigationButton.addEventListener('click', () => {
+                // TODO: 導向到主應用程式介面
+                console.log('開始調查...');
+                alert('TODO: 導向主應用程式介面');
             });
         });
     </script>
