@@ -72,6 +72,20 @@
         .button.secondary:hover {
             background-color: #545b62;
         }
+        .input-group {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+        }
         .hidden {
             display: none;
         }
@@ -102,14 +116,37 @@
         </div>
     </div>
 
+    <!-- 畫面 3: API Key 申請教學 (以 Etherscan 為例) -->
+    <div id="screen3" class="container hidden">
+        <h2>API Key 申請教學</h2>
+        <p>我們將引導您申請一個免費的 API Key。以下以 Etherscan 為例：</p>
+        <ol style="text-align: left; max-width: 500px; margin: 20px auto;">
+            <li>前往 <a href="https://etherscan.io/register" target="_blank">etherscan.io</a> 註冊帳號。</li>
+            <li>登入後，點擊個人介面的 **API-KEYs**。</li>
+            <li>點擊「**Add**」建立一組新的金鑰，並將那串英數字複製下來。</li>
+        </ol>
+        <div class="input-group">
+            <input type="text" id="apiKeyInput" placeholder="請在此貼上您的 Etherscan API Key">
+            <button class="button" id="testConnectionButton">測試連線</button>
+        </div>
+        <div class="button-group">
+            <button class="button secondary" id="backToScreen2Button">上一步</button>
+            <button class="button" id="nextToScreen4Button">完成設定</button>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const screen1 = document.getElementById('screen1');
             const screen2 = document.getElementById('screen2');
+            const screen3 = document.getElementById('screen3');
 
             const nextToScreen2Button = document.getElementById('nextToScreen2Button');
             const backToScreen1Button = document.getElementById('backToScreen1Button');
             const nextToScreen3Button = document.getElementById('nextToScreen3Button');
+            const backToScreen2Button = document.getElementById('backToScreen2Button');
+            const nextToScreen4Button = document.getElementById('nextToScreen4Button');
+            const testConnectionButton = document.getElementById('testConnectionButton');
 
             nextToScreen2Button.addEventListener('click', () => {
                 screen1.classList.add('hidden');
@@ -122,9 +159,26 @@
             });
 
             nextToScreen3Button.addEventListener('click', () => {
-                // TODO: 導向到下一個設定步驟 (API Key 申請教學)
-                console.log('進入 API Key 申請教學頁面...');
-                alert('TODO: 進入 API Key 申請教學頁面');
+                screen2.classList.add('hidden');
+                screen3.classList.remove('hidden');
+            });
+
+            backToScreen2Button.addEventListener('click', () => {
+                screen3.classList.add('hidden');
+                screen2.classList.remove('hidden');
+            });
+
+            testConnectionButton.addEventListener('click', () => {
+                const apiKey = document.getElementById('apiKeyInput').value;
+                // TODO: 實現 API Key 連線測試邏輯
+                console.log('測試連線 API Key:', apiKey);
+                alert('TODO: 執行 API Key 連線測試');
+            });
+
+            nextToScreen4Button.addEventListener('click', () => {
+                // TODO: 導向到下一個設定步驟 (設定完成畫面)
+                console.log('進入設定完成頁面...');
+                alert('TODO: 進入設定完成頁面');
             });
         });
     </script>
