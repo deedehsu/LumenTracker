@@ -79,7 +79,7 @@
             align-items: center;
             gap: 10px;
         }
-        input[type="password"] {
+        input[type="password"], input[type="text"] {
             width: 80%;
             padding: 10px;
             border: 1px solid #ccc;
@@ -155,6 +155,7 @@
             <input type="password" id="masterPassword" placeholder="請輸入主密碼">
             <input type="password" id="confirmMasterPassword" placeholder="請再次輸入主密碼">
             <p class="error-message hidden" id="passwordError">密碼不一致或不符合要求！</p>
+            <p class="error-message hidden" id="saveError">API Key 儲存失敗，請重試。</p>
         </div>
         <div class="button-group">
             <button class="button secondary" id="backToScreen3Button">上一步</button>
@@ -174,26 +175,44 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        const { ipcRenderer } = require('electron');
+        let temporaryApiKey = null; // 用於暫存 API Key
+
+        document.addEventListener('DOMContentLoaded', async () => {
             const screen1 = document.getElementById('screen1');
             const screen2 = document.getElementById('screen2');
             const screen3 = document.getElementById('screen3');
-            const screen4 = document.getElementById('screen4'); // 新的主密碼畫面
-            const screen5 = document.getElementById('screen5'); // 原來的設定完成畫面
+            const screen4 = document.getElementById('screen4');
+            const screen5 = document.getElementById('screen5');
 
             const nextToScreen2Button = document.getElementById('nextToScreen2Button');
             const backToScreen1Button = document.getElementById('backToScreen1Button');
             const nextToScreen3Button = document.getElementById('nextToScreen3Button');
             const backToScreen2Button = document.getElementById('backToScreen2Button');
-            const nextToScreen4Button = document.getElementById('nextToScreen4Button'); // 從 screen3 到新的 screen4
-            const backToScreen3Button = document.getElementById('backToScreen3Button'); // 從新的 screen4 回 screen3
-            const nextToScreen5Button = document.getElementById('nextToScreen5Button'); // 從新的 screen4 到新的 screen5
+            const nextToScreen4Button = document.getElementById('nextToScreen4Button');
+            const backToScreen3Button = document.getElementById('backToScreen3Button');
+            const nextToScreen5Button = document.getElementById('nextToScreen5Button');
             const testConnectionButton = document.getElementById('testConnectionButton');
             const startInvestigationButton = document.getElementById('startInvestigationButton');
 
+            const apiKeyInputField = document.getElementById('apiKeyInput');
             const masterPasswordField = document.getElementById('masterPassword');
             const confirmMasterPasswordField = document.getElementById('confirmMasterPassword');
             const passwordError = document.getElementById('passwordError');
+            const saveError = document.getElementById('saveError');
+
+            // 檢查 API Key 是否已配置，如果已配置則跳過 Onboarding Wizard
+            const isConfigured = await ipcRenderer.invoke('is-api-key-configured');
+            if (isConfigured) {
+                alert('API Key 已配置。TODO: 導向到主應用程式介面或解鎖畫面。');
+                // TODO: 實際上應該顯示解鎖畫面或直接進入主應用程序
+                screen1.classList.add('hidden'); // 隱藏所有 Onboarding 畫面
+                screen2.classList.add('hidden');
+                screen3.classList.add('hidden');
+                screen4.classList.add('hidden');
+                // 臨時顯示 screen5 作為占位符
+                screen5.classList.remove('hidden'); // 實際應導向主界面
+            }
 
             // 畫面切換邏輯
             nextToScreen2Button.addEventListener('click', () => {
@@ -217,10 +236,9 @@
             });
 
             nextToScreen4Button.addEventListener('click', () => {
-                // 在從 screen3 導向新的 screen4 之前，可能需要先保存 API Key
-                // TODO: 執行 API Key 安全儲存邏輯 (加密前)
+                temporaryApiKey = apiKeyInputField.value; // 暫存 API Key
                 screen3.classList.add('hidden');
-                screen4.classList.remove('hidden'); // 導向新的主密碼畫面
+                screen4.classList.remove('hidden'); // 導向主密碼畫面
             });
 
             backToScreen3Button.addEventListener('click', () => {
@@ -228,32 +246,52 @@
                 screen3.classList.remove('hidden');
             });
 
-            nextToScreen5Button.addEventListener('click', () => {
+            nextToScreen5Button.addEventListener('click', async () => {
                 const masterPass = masterPasswordField.value;
                 const confirmPass = confirmMasterPasswordField.value;
 
-                if (masterPass && masterPass === confirmPass) {
+                saveError.classList.add('hidden'); // 隱藏之前的錯誤訊息
+
+                if (masterPass && masterPass === confirmPass && temporaryApiKey) {
                     passwordError.classList.add('hidden');
-                    // TODO: 在此執行主密碼的設定與 API Key 的加密儲存
                     console.log('主密碼設定成功！準備加密 API Key...');
-                    screen4.classList.add('hidden');
-                    screen5.classList.remove('hidden'); // 導向新的設定完成畫面
+                    
+                    const result = await ipcRenderer.invoke('save-api-key', {
+                        apiKey: temporaryApiKey,
+                        masterPassword: masterPass
+                    });
+
+                    if (result.success) {
+                        temporaryApiKey = null; // 清除臨時變數
+                        screen4.classList.add('hidden');
+                        screen5.classList.remove('hidden'); // 導向設定完成畫面
+                    } else {
+                        saveError.textContent = `儲存失敗: ${result.message}`; // 顯示後端錯誤訊息
+                        saveError.classList.remove('hidden');
+                    }
+                } else if (!temporaryApiKey) {
+                     saveError.textContent = 'API Key 未提供，請返回上一步輸入。';
+                     saveError.classList.remove('hidden');
                 } else {
                     passwordError.classList.remove('hidden');
                 }
             });
 
             testConnectionButton.addEventListener('click', () => {
-                const apiKey = document.getElementById('apiKeyInput').value;
+                const apiKey = apiKeyInputField.value;
                 // TODO: 實現 API Key 連線測試邏輯
                 console.log('測試連線 API Key:', apiKey);
                 alert('TODO: 執行 API Key 連線測試');
             });
 
-            startInvestigationButton.addEventListener('click', () => {
+            startInvestigationButton.addEventListener('click', async () => {
                 // TODO: 導向到主應用程式介面
                 console.log('開始調查...');
                 alert('TODO: 導向主應用程式介面');
+
+                // 示例: 獲取 API Key (未來需要一個解鎖流程)
+                // const retrievedApiKey = await ipcRenderer.invoke('get-api-key', masterPasswordFromLogin);
+                // console.log('檢索到的 API Key:', retrievedApiKey.apiKey);
             });
         });
     </script>
