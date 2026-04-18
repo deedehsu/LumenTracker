@@ -178,10 +178,19 @@
         const { ipcRenderer } = require('electron');
         let temporaryApiKey = null; // 用於暫存 API Key
 
-        console.log('DOMContentLoaded event listener added.');
+        // 全局錯誤捕獲
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error(`Frontend Error: ${message} at ${source}:${lineno}:${colno}`, error);
+            alert(`發生前端錯誤，請檢查開發者工具控制台：${message}`);
+            return true; // 防止預設的錯誤處理
+        };
+
+        console.log('Script loaded and trying to attach DOMContentLoaded listener.');
+        alert('LumenTracker 介面腳本已載入！'); // 新增的啟動提示
 
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('DOMContentLoaded fired.');
+            alert('DOMContentLoaded 觸發！腳本正在運行。'); // 新增的 DOMContentLoaded 提示
 
             const screen1 = document.getElementById('screen1');
             const screen2 = document.getElementById('screen2');
@@ -201,7 +210,7 @@
             const testConnectionButton = document.getElementById('testConnectionButton');
             const startInvestigationButton = document.getElementById('startInvestigationButton');
 
-            console.log('Buttons retrieved:', { nextToScreen2Button, testConnectionButton });
+            console.log('Buttons retrieved:', { nextToScreen2Button, testConnectionButton, startInvestigationButton });
 
             const apiKeyInputField = document.getElementById('apiKeyInput');
             const masterPasswordField = document.getElementById('masterPassword');
@@ -214,13 +223,11 @@
             if (isConfigured) {
                 console.log('API Key is configured. Skipping Onboarding Wizard.');
                 alert('API Key 已配置。TODO: 導向到主應用程式介面或解鎖畫面。');
-                // TODO: 實際上應該顯示解鎖畫面或直接進入主應用程序
-                screen1.classList.add('hidden'); // 隱藏所有 Onboarding 畫面
+                screen1.classList.add('hidden');
                 screen2.classList.add('hidden');
                 screen3.classList.add('hidden');
                 screen4.classList.add('hidden');
-                // 臨時顯示 screen5 作為占位符
-                screen5.classList.remove('hidden'); // 實際應導向主界面
+                screen5.classList.remove('hidden'); // 臨時顯示 screen5 作為占位符
             } else {
                 console.log('API Key not configured. Showing Onboarding Wizard screen 1.');
                 screen1.classList.remove('hidden'); // 確保畫面 1 初始是顯示的
@@ -230,6 +237,7 @@
             if (nextToScreen2Button) {
                 nextToScreen2Button.addEventListener('click', () => {
                     console.log('nextToScreen2Button clicked.');
+                    alert('開始設定按鈕被點擊了！'); // 新增的按鈕點擊提示
                     screen1.classList.add('hidden');
                     screen2.classList.remove('hidden');
                 });
@@ -278,26 +286,29 @@
 
                     saveError.classList.add('hidden'); // 隱藏之前的錯誤訊息
 
-                    if (masterPass && masterPass === confirmPass && temporaryApiKey) {
+                    if (masterPass && masterPass === confirmPass) {
                         passwordError.classList.add('hidden');
                         console.log('主密碼設定成功！準備加密 API Key...');
                         
-                        const result = await ipcRenderer.invoke('save-api-key', {
-                            apiKey: temporaryApiKey,
-                            masterPassword: masterPass
-                        });
+                        // 確保 temporaryApiKey 不為 null
+                        if (temporaryApiKey) {
+                            const result = await ipcRenderer.invoke('save-api-key', {
+                                apiKey: temporaryApiKey,
+                                masterPassword: masterPass
+                            });
 
-                        if (result.success) {
-                            temporaryApiKey = null; // 清除臨時變數
-                            screen4.classList.add('hidden');
-                            screen5.classList.remove('hidden'); // 導向設定完成畫面
+                            if (result.success) {
+                                temporaryApiKey = null; // 清除臨時變數
+                                screen4.classList.add('hidden');
+                                screen5.classList.remove('hidden'); // 導向設定完成畫面
+                            } else {
+                                saveError.textContent = `儲存失敗: ${result.message}`; // 顯示後端錯誤訊息
+                                saveError.classList.remove('hidden');
+                            }
                         } else {
-                            saveError.textContent = `儲存失敗: ${result.message}`; // 顯示後端錯誤訊息
+                            saveError.textContent = 'API Key 未提供，請返回上一步輸入。';
                             saveError.classList.remove('hidden');
                         }
-                    } else if (!temporaryApiKey) {
-                         saveError.textContent = 'API Key 未提供，請返回上一步輸入。';
-                         saveError.classList.remove('hidden');
                     } else {
                         passwordError.classList.remove('hidden');
                     }
@@ -307,7 +318,6 @@
                 testConnectionButton.addEventListener('click', async () => {
                     console.log('testConnectionButton clicked.');
                     const apiKey = apiKeyInputField.value;
-                    // TODO: 實現 API Key 連線測試邏輯
                     const result = await ipcRenderer.invoke('test-api-key', apiKey);
                     if (result.success) {
                         alert('API Key 連線測試成功！');
