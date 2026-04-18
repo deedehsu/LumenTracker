@@ -1,8 +1,14 @@
 
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const Store = require('electron-store');
+const StoreModule = require('electron-store'); // 暫時更改變數名以便調試
+const Store = StoreModule.default || StoreModule; // 嘗試獲取 default 導出或直接使用
 const crypto = require('crypto');
+const axios = require('axios');
+
+// Debug: 打印 electron-store 的 require 結果，以便我們了解其導出結構
+console.log('Debug: require('electron-store') result:', StoreModule);
+console.log('Debug: Store constructor after attempting default export:', Store);
 
 const store = new Store();
 
@@ -26,6 +32,34 @@ function decrypt(text, masterKey) {
     let decrypted = decipher.update(encryptedText);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     return decrypted.toString();
+}
+
+// Etherscan API Key 有效性測試函數
+async function testEtherscanApiKey(apiKey) {
+    const ETHERSCAN_API_URL = 'https://api.etherscan.io/api';
+    try {
+        const response = await axios.get(ETHERSCAN_API_URL, {
+            params: {
+                module: 'proxy',
+                action: 'eth_blockNumber',
+                apikey: apiKey
+            }
+        });
+
+        // Etherscan 會返回一個 JSON 對象，如果 API Key 無效，會有特定的錯誤訊息
+        if (response.data && response.data.error && response.data.error.message.includes('Invalid API Key')) {
+            return { success: false, message: 'Invalid Etherscan API Key.' };
+        }
+        if (response.data && response.data.result) {
+            return { success: true, message: 'Etherscan API Key is valid.' };
+        }
+        // 其他未預期的響應也視為失敗
+        return { success: false, message: 'Unexpected Etherscan API response.' };
+
+    } catch (error) {
+        console.error('Error testing Etherscan API Key:', error.message);
+        return { success: false, message: `Connection test failed: ${error.message}` };
+    }
 }
 
 // IPC 主進程處理器
@@ -60,6 +94,10 @@ ipcMain.handle('get-api-key', async (event, masterPassword) => {
 
 ipcMain.handle('is-api-key-configured', async () => {
     return store.get('apiKeyConfigured', false);
+});
+
+ipcMain.handle('test-api-key', async (event, apiKey) => {
+    return testEtherscanApiKey(apiKey);
 });
 
 function createWindow() {
