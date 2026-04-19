@@ -1,14 +1,11 @@
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, contextBridge } = require('electron');
 const path = require('path');
-const StoreModule = require('electron-store'); // 暫時更改變數名以便調試
-const Store = StoreModule.default || StoreModule; // 嘗試獲取 default 導出或直接使用
+const Store = require('electron-store'); // 簡化引入方式，假設直接導出構造函數
 const crypto = require('crypto');
 const axios = require('axios');
 
-// Debug: 打印 electron-store 的 require 結果，以便我們了解其導出結構
-console.log('Debug: require('electron-store') result:', StoreModule);
-console.log('Debug: Store constructor after attempting default export:', Store);
+// 移除 Debug: console.log(require('electron-store')) 等語句，因應用啟動過早崩潰
 
 const store = new Store();
 
@@ -46,14 +43,12 @@ async function testEtherscanApiKey(apiKey) {
             }
         });
 
-        // Etherscan 會返回一個 JSON 對象，如果 API Key 無效，會有特定的錯誤訊息
         if (response.data && response.data.error && response.data.error.message.includes('Invalid API Key')) {
             return { success: false, message: 'Invalid Etherscan API Key.' };
         }
         if (response.data && response.data.result) {
             return { success: true, message: 'Etherscan API Key is valid.' };
         }
-        // 其他未預期的響應也視為失敗
         return { success: false, message: 'Unexpected Etherscan API response.' };
 
     } catch (error) {
@@ -65,7 +60,6 @@ async function testEtherscanApiKey(apiKey) {
 // IPC 主進程處理器
 ipcMain.handle('save-api-key', async (event, { apiKey, masterPassword }) => {
     try {
-        // 使用主密碼的 SHA256 哈希作為加密密鑰
         const masterKey = crypto.createHash('sha256').update(masterPassword).digest('hex');
         const encryptedApiKey = encrypt(apiKey, masterKey);
         store.set('encryptedApiKey', encryptedApiKey);
@@ -96,7 +90,7 @@ ipcMain.handle('is-api-key-configured', async () => {
     return store.get('apiKeyConfigured', false);
 });
 
-ipcMain.handle('test-api-key', async (event, apiKey) => {
+icpMain.handle('test-api-key', async (event, apiKey) => {
     return testEtherscanApiKey(apiKey);
 });
 
@@ -105,10 +99,9 @@ function createWindow() {
     width: 800,
     height: 600,
     webPreferences: {
-      // 注意: contextIsolation 通常建議為 true 以提高安全性，但為了簡化 nodeIntegration 示例，我們暫時設為 false。
-      // 在生產環境中應詳細考慮預加載腳本 (preload script) 和 contextIsolation。
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: path.join(__dirname, 'preload.js'), // 引入 preload 腳本
+      nodeIntegration: false, // 禁用 Node.js 整合以提高安全性
+      contextIsolation: true, // 啟用上下文隔離以提高安全性
     },
   });
 
