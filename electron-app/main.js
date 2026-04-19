@@ -1,5 +1,5 @@
 
-const { app, BrowserWindow, ipcMain, contextBridge } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron'); // 移除 contextBridge
 const path = require('path');
 const crypto = require('crypto');
 const axios = require('axios');
@@ -9,22 +9,49 @@ let store; // 將 store 聲明為全局變量，但延遲初始化
 // 加密和解密函數
 const ALGORITHM = 'aes-256-cbc';
 const IV_LENGTH = 16; // For AES, this is always 16
+const SALT_LENGTH = 16;
+const KEY_LENGTH = 32; // 256 bits
+const ITERATIONS = 100000;
+const DIGEST = 'sha256';
 
-function encrypt(text, masterKey) {
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(masterKey, 'hex'), iv);
-    let encrypted = cipher.update(text);
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-    return iv.toString('hex') + ':' + encrypted.toString('hex');
+// 使用 PBKDF2 進行更安全的金鑰衍生
+function deriveKey(password, salt) {
+    return crypto.pbkdf2Sync(password, salt, ITERATIONS, KEY_LENGTH, DIGEST);
 }
 
-function decrypt(text, masterKey) {
+function encrypt(text, masterPassword) {
+    // 生成隨機鹽
+    const salt = crypto.randomBytes(SALT_LENGTH);
+    // 衍生加密金鑰
+    const key = deriveKey(masterPassword, salt);
+    // 生成隨機 IV
+    const iv = crypto.randomBytes(IV_LENGTH);
+    
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+    let encrypted = cipher.update(text);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    
+    // 將 salt, iv, 和加密數據組合儲存，格式為: salt:iv:encryptedData
+    return salt.toString('hex') + ':' + iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+function decrypt(text, masterPassword) {
     const textParts = text.split(':');
-    const iv = Buffer.from(textParts.shift(), 'hex');
-    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(masterKey, 'hex'), iv);
+    if (textParts.length !== 3) {
+        throw new Error('Invalid encrypted data format');
+    }
+    
+    const salt = Buffer.from(textParts[0], 'hex');
+    const iv = Buffer.from(textParts[1], 'hex');
+    const encryptedText = Buffer.from(textParts[2], 'hex');
+    
+    // 重新衍生相同的金鑰
+    const key = deriveKey(masterPassword, salt);
+    
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     let decrypted = decipher.update(encryptedText);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
+    
     return decrypted.toString();
 }
 
@@ -71,55 +98,65 @@ function createWindow() {
   // mainWindow.webContents.openDevTools();
 }
 
-app.whenReady().then(async () => { // 將此回調函數設為 async
-  // 動態引入 electron-store 並初始化 store
-  const { default: Store } = await import('electron-store');
-  store = new Store();
+app.whenReady().then(async () => {
+  try {
+      // 動態引入 electron-store 並初始化 store
+      const { default: Store } = await import('electron-store');
+      store = new Store();
+      console.log('electron-store initialized successfully.');
 
-  // 在 store 初始化後，註冊所有的 IPC 主進程處理器
-  ipcMain.handle('save-api-key', async (event, { apiKey, masterPassword }) => {
-      try {
-          const masterKey = crypto.createHash('sha256').update(masterPassword).digest('hex');
-          const encryptedApiKey = encrypt(apiKey, masterKey);
-          store.set('encryptedApiKey', encryptedApiKey);
-          store.set('apiKeyConfigured', true);
-          return { success: true };
-      } catch (error) {
-          console.error('Failed to save API Key:', error);
-          return { success: false, message: error.message };
-      }
-  });
-
-  ipcMain.handle('get-api-key', async (event, masterPassword) => {
-      try {
-          const encryptedApiKey = store.get('encryptedApiKey');
-          if (!encryptedApiKey) {
-              return { success: false, message: 'No API Key configured.' };
+      // 在 store 初始化後，註冊所有的 IPC 主進程處理器
+      ipcMain.handle('save-api-key', async (event, { apiKey, masterPassword }) => {
+          try {
+              if (!store) throw new Error('Store is not initialized.');
+              // 使用 PBKDF2 加密
+              const encryptedApiKey = encrypt(apiKey, masterPassword);
+              store.set('encryptedApiKey', encryptedApiKey);
+              store.set('apiKeyConfigured', true);
+              return { success: true };
+          } catch (error) {
+              console.error('Failed to save API Key:', error);
+              return { success: false, message: error.message };
           }
-          const masterKey = crypto.createHash('sha256').update(masterPassword).digest('hex');
-          const apiKey = decrypt(encryptedApiKey, masterKey);
-          return { success: true, apiKey };
-      } catch (error) {
-          console.error('Failed to retrieve API Key:', error);
-          return { success: false, message: 'Failed to decrypt API Key. Incorrect password or corrupted data.' };
-      }
-  });
+      });
 
-  ipcMain.handle('is-api-key-configured', async () => {
-      return store.get('apiKeyConfigured', false);
-  });
+      ipcMain.handle('get-api-key', async (event, masterPassword) => {
+          try {
+              if (!store) throw new Error('Store is not initialized.');
+              const encryptedApiKey = store.get('encryptedApiKey');
+              if (!encryptedApiKey) {
+                  return { success: false, message: 'No API Key configured.' };
+              }
+              // 使用 PBKDF2 解密
+              const apiKey = decrypt(encryptedApiKey, masterPassword);
+              return { success: true, apiKey };
+          } catch (error) {
+              console.error('Failed to retrieve API Key:', error);
+              return { success: false, message: 'Failed to decrypt API Key. Incorrect password or corrupted data.' };
+          }
+      });
 
-  ipcMain.handle('test-api-key', async (event, apiKey) => {
-      return testEtherscanApiKey(apiKey);
-  });
+      ipcMain.handle('is-api-key-configured', async () => {
+          if (!store) return false; // 防止在 store 初始化前被調用
+          return store.get('apiKeyConfigured', false);
+      });
 
-  createWindow();
+      ipcMain.handle('test-api-key', async (event, apiKey) => {
+          return testEtherscanApiKey(apiKey);
+      });
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
-    }
-  });
+
+      app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+          createWindow();
+        }
+      });
+
+  } catch (error) {
+      console.error('Failed to initialize application:', error);
+      // 在此處可以考慮優雅地退出應用或顯示一個致命錯誤視窗
+  }
 });
 
 app.on('window-all-closed', () => {
