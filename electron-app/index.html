@@ -175,15 +175,15 @@
     </div>
 
     <script>
-        // 渲染進程不再直接 require ipcRenderer，而是通過 preload.js 暴露的全局對象訪問
-        const electronAPI = window.electronAPI; // 獲取 preload.js 暴露的接口
+        // 直接使用 window.electronAPI，避免全局 const 宣告衝突
+        // const electronAPI = window.electronAPI; 
 
         let temporaryApiKey = null; // 用於暫存 API Key
 
         // 全局錯誤捕獲 (用於前端 JavaScript 錯誤)
         window.onerror = function(message, source, lineno, colno, error) {
             console.error(`Frontend Error: ${message} at ${source}:${lineno}:${colno}`, error);
-            alert(`發生前端錯誤，請檢查開發者工具控制台：${message}`);
+            // 移除 alert，避免在某些環境下產生干擾
             return true; // 防止預設的錯誤處理
         };
 
@@ -213,7 +213,7 @@
             const saveError = document.getElementById('saveError');
 
             // 檢查 API Key 是否已配置，如果已配置則跳過 Onboarding Wizard
-            const isConfigured = await electronAPI.isApiKeyConfigured(); // 使用 exposed API
+            const isConfigured = await window.electronAPI.isApiKeyConfigured(); // 使用 window.electronAPI
             if (isConfigured) {
                 console.log('API Key is configured. Skipping Onboarding Wizard.');
                 alert('API Key 已配置。TODO: 導向到主應用程式介面或解鎖畫面。');
@@ -284,7 +284,7 @@
                         console.log('主密碼設定成功！準備加密 API Key...');
                         
                         if (temporaryApiKey) {
-                            const result = await electronAPI.saveApiKey({
+                            const result = await window.electronAPI.saveApiKey({
                                 apiKey: temporaryApiKey,
                                 masterPassword: masterPass
                             });
@@ -310,7 +310,7 @@
                 testConnectionButton.addEventListener('click', async () => {
                     console.log('testConnectionButton clicked.');
                     const apiKey = apiKeyInputField.value;
-                    const result = await electronAPI.testApiKey(apiKey);
+                    const result = await window.electronAPI.testApiKey(apiKey);
                     if (result.success) {
                         alert('API Key 連線測試成功！');
                         console.log('API Key 連線測試成功！');
