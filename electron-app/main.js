@@ -94,8 +94,8 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  // Open the DevTools (強制開啟以利除錯)
+  mainWindow.webContents.openDevTools();
 }
 
 app.whenReady().then(async () => {
