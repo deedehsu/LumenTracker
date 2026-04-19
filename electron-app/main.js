@@ -1,13 +1,10 @@
 
 const { app, BrowserWindow, ipcMain, contextBridge } = require('electron');
 const path = require('path');
-const Store = require('electron-store'); // 簡化引入方式，假設直接導出構造函數
 const crypto = require('crypto');
 const axios = require('axios');
 
-// 移除 Debug: console.log(require('electron-store')) 等語句，因應用啟動過早崩潰
-
-const store = new Store();
+let store; // 將 store 聲明為全局變量，但延遲初始化
 
 // 加密和解密函數
 const ALGORITHM = 'aes-256-cbc';
@@ -57,51 +54,14 @@ async function testEtherscanApiKey(apiKey) {
     }
 }
 
-// IPC 主進程處理器
-ipcMain.handle('save-api-key', async (event, { apiKey, masterPassword }) => {
-    try {
-        const masterKey = crypto.createHash('sha256').update(masterPassword).digest('hex');
-        const encryptedApiKey = encrypt(apiKey, masterKey);
-        store.set('encryptedApiKey', encryptedApiKey);
-        store.set('apiKeyConfigured', true);
-        return { success: true };
-    } catch (error) {
-        console.error('Failed to save API Key:', error);
-        return { success: false, message: error.message };
-    }
-});
-
-ipcMain.handle('get-api-key', async (event, masterPassword) => {
-    try {
-        const encryptedApiKey = store.get('encryptedApiKey');
-        if (!encryptedApiKey) {
-            return { success: false, message: 'No API Key configured.' };
-        }
-        const masterKey = crypto.createHash('sha256').update(masterPassword).digest('hex');
-        const apiKey = decrypt(encryptedApiKey, masterKey);
-        return { success: true, apiKey };
-    } catch (error) {
-        console.error('Failed to retrieve API Key:', error);
-        return { success: false, message: 'Failed to decrypt API Key. Incorrect password or corrupted data.' };
-    }
-});
-
-ipcMain.handle('is-api-key-configured', async () => {
-    return store.get('apiKeyConfigured', false);
-});
-
-icpMain.handle('test-api-key', async (event, apiKey) => {
-    return testEtherscanApiKey(apiKey);
-});
-
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'), // 引入 preload 腳本
-      nodeIntegration: false, // 禁用 Node.js 整合以提高安全性
-      contextIsolation: true, // 啟用上下文隔離以提高安全性
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -111,7 +71,48 @@ function createWindow() {
   // mainWindow.webContents.openDevTools();
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => { // 將此回調函數設為 async
+  // 動態引入 electron-store 並初始化 store
+  const { default: Store } = await import('electron-store');
+  store = new Store();
+
+  // 在 store 初始化後，註冊所有的 IPC 主進程處理器
+  ipcMain.handle('save-api-key', async (event, { apiKey, masterPassword }) => {
+      try {
+          const masterKey = crypto.createHash('sha256').update(masterPassword).digest('hex');
+          const encryptedApiKey = encrypt(apiKey, masterKey);
+          store.set('encryptedApiKey', encryptedApiKey);
+          store.set('apiKeyConfigured', true);
+          return { success: true };
+      } catch (error) {
+          console.error('Failed to save API Key:', error);
+          return { success: false, message: error.message };
+      }
+  });
+
+  ipcMain.handle('get-api-key', async (event, masterPassword) => {
+      try {
+          const encryptedApiKey = store.get('encryptedApiKey');
+          if (!encryptedApiKey) {
+              return { success: false, message: 'No API Key configured.' };
+          }
+          const masterKey = crypto.createHash('sha256').update(masterPassword).digest('hex');
+          const apiKey = decrypt(encryptedApiKey, masterKey);
+          return { success: true, apiKey };
+      } catch (error) {
+          console.error('Failed to retrieve API Key:', error);
+          return { success: false, message: 'Failed to decrypt API Key. Incorrect password or corrupted data.' };
+      }
+  });
+
+  ipcMain.handle('is-api-key-configured', async () => {
+      return store.get('apiKeyConfigured', false);
+  });
+
+  ipcMain.handle('test-api-key', async (event, apiKey) => {
+      return testEtherscanApiKey(apiKey);
+  });
+
   createWindow();
 
   app.on('activate', () => {
