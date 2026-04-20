@@ -89,6 +89,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      // 在開發階段允許 file:// 協議下的跨來源請求，解決 Windows 下 preload 無法載入的問題
+      webSecurity: false 
     },
   });
 
