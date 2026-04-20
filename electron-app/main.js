@@ -55,9 +55,9 @@ function decrypt(text, masterPassword) {
     return decrypted.toString();
 }
 
-// Etherscan API Key 有效性測試函數 (強化版驗證)
+// Etherscan API Key 有效性測試函數 (強化版驗證 - 遷移至 V2)
 async function testEtherscanApiKey(apiKey) {
-    const ETHERSCAN_API_URL = 'https://api.etherscan.io/api';
+    const ETHERSCAN_API_URL = 'https://api.etherscan.io/v2/api';
     
     // 基本格式驗證：Etherscan API Key 通常是 34 個字元的英數字
     if (!apiKey || apiKey.length < 20) {
@@ -68,6 +68,7 @@ async function testEtherscanApiKey(apiKey) {
         // 使用 account 模組的 balance action 進行測試，這通常需要更嚴格的 API 驗證
         const response = await axios.get(ETHERSCAN_API_URL, {
             params: {
+                chainid: 1, // Etherscan V2 必須指定 chainid，1 代表 Ethereum Mainnet
                 module: 'account',
                 action: 'balance',
                 address: '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae', // 任意一個有效的以太坊地址
