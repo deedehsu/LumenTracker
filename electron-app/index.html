@@ -51,7 +51,7 @@
             margin-top: 30px;
             display: flex;
             justify-content: center;
-            gap: 15px; /* 按鈕間距 */
+            gap: 15px;
         }
         .button {
             background-color: #007bff;
@@ -78,6 +78,7 @@
             flex-direction: column;
             align-items: center;
             gap: 10px;
+            width: 100%;
         }
         input[type="password"], input[type="text"] {
             width: 80%;
@@ -85,6 +86,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 1em;
+            box-sizing: border-box; /* Ensure padding doesn't affect width */
         }
         .hidden {
             display: none;
@@ -99,6 +101,28 @@
             font-size: 0.9em;
             margin-top: -10px;
             margin-bottom: 10px;
+        }
+        .success-message {
+            color: #28a745;
+            font-size: 0.9em;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+        .api-section {
+            border: 1px solid #eee;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background-color: #fafafa;
+        }
+        .api-section h3 {
+            margin-top: 0;
+            font-size: 1.2em;
+            color: #555;
+        }
+        .test-result {
+            margin-top: 5px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -127,22 +151,36 @@
         </div>
     </div>
 
-    <!-- 畫面 3: API Key 申請教學 (以 Etherscan 為例) -->
-    <div id="screen3" class="container hidden">
-        <h2>API Key 申請教學</h2>
-        <p>我們將引導您申請一個免費的 API Key。以下以 Etherscan 為例：</p>
-        <ol style="text-align: left; max-width: 500px; margin: 20px auto;">
-            <li>前往 <a href="https://etherscan.io/register" target="_blank">etherscan.io</a> 註冊帳號。</li>
-            <li>登入後，點擊個人介面的 **API-KEYs**。</li>
-            <li>點擊「**Add**」建立一組新的金鑰，並將那串英數字複製下來。</li>
-        </ol>
-        <div class="input-group">
-            <input type="text" id="apiKeyInput" placeholder="請在此貼上您的 Etherscan API Key">
-            <button class="button" id="testConnectionButton">測試連線</button>
+    <!-- 畫面 3: API Key 申請教學 (多鏈支援) -->
+    <div id="screen3" class="container hidden" style="max-width: 800px;">
+        <h2>配置您的 API Keys</h2>
+        <p>請申請以下 API Keys 以解鎖 LumenTracker 的完整分析功能。您至少需要配置一個才能繼續。</p>
+
+        <!-- Etherscan 區塊 -->
+        <div class="api-section">
+            <h3>1. Etherscan API Key (必備，支援以太坊及 EVM 兼容鏈)</h3>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">請前往 <a href="https://etherscan.io/register" target="_blank">etherscan.io</a> 註冊並在個人介面的 API-KEYs 中新增金鑰。</p>
+            <div class="input-group" style="flex-direction: row; justify-content: center;">
+                <input type="text" id="etherscanKeyInput" placeholder="貼上 Etherscan API Key">
+                <button class="button" id="testEtherscanButton" style="padding: 10px 15px; font-size: 0.9em;">測試連線</button>
+            </div>
+            <div id="etherscanResult" class="test-result"></div>
         </div>
+
+        <!-- Tronscan 區塊 -->
+        <div class="api-section">
+            <h3>2. Tronscan API Key (建議，支援波場鏈與 TRC-20 USDT 分析)</h3>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">請前往 <a href="https://tronscan.org/#/developer/api" target="_blank">tronscan.org</a> 登入並在「開發者 -> API Key」中產生。</p>
+            <div class="input-group" style="flex-direction: row; justify-content: center;">
+                <input type="text" id="tronscanKeyInput" placeholder="貼上 Tronscan API Key (選填)">
+                <button class="button" id="testTronscanButton" style="padding: 10px 15px; font-size: 0.9em;">測試連線</button>
+            </div>
+            <div id="tronscanResult" class="test-result"></div>
+        </div>
+
         <div class="button-group">
             <button class="button secondary" id="backToScreen2Button">上一步</button>
-            <button class="button" id="nextToScreen4Button">完成設定</button>
+            <button class="button" id="nextToScreen4Button">完成配置，下一步</button>
         </div>
     </div>
 
@@ -152,22 +190,23 @@
         <p>為了確保您的 API Key 和其他敏感資料的安全，我們建議設定一個**主密碼**。</p>
         <p>此密碼將用於加密您的 API Key，並在每次啟動軟體時要求輸入，以保護您的隱私。</p>
         <div class="input-group">
-            <input type="password" id="masterPassword" placeholder="請輸入主密碼">
-            <input type="password" id="confirmMasterPassword" placeholder="請再次輸入主密碼">
+            <!-- 加入 autocomplete 屬性以幫助某些環境正確識別和聚焦 -->
+            <input type="password" id="masterPassword" placeholder="請輸入主密碼" autocomplete="new-password" autofocus>
+            <input type="password" id="confirmMasterPassword" placeholder="請再次輸入主密碼" autocomplete="new-password">
             <p class="error-message hidden" id="passwordError">密碼不一致或不符合要求！</p>
             <p class="error-message hidden" id="saveError">API Key 儲存失敗，請重試。</p>
         </div>
         <div class="button-group">
             <button class="button secondary" id="backToScreen3Button">上一步</button>
-            <button class="button" id="nextToScreen5Button">完成設定</button>
+            <button class="button" id="nextToScreen5Button">加密並儲存</button>
         </div>
     </div>
 
-    <!-- 畫面 5: 設定完成 (原畫面 4) -->
+    <!-- 畫面 5: 設定完成 -->
     <div id="screen5" class="container hidden">
         <div class="checkmark">✅</div>
         <h2>設定完成！</h2>
-        <p>您的專屬通道已建立。這把鑰匙已加密儲存於您的電腦中。</p>
+        <p>您的專屬通道已建立。這把鑰匙已使用高等級加密儲存於您的電腦中。</p>
         <p>現在，請輸入您要追查的第一個錢包地址，我們開始破解迷宮。</p>
         <div class="button-group">
             <button class="button" id="startInvestigationButton">開始調查</button>
@@ -175,16 +214,11 @@
     </div>
 
     <script>
-        // 直接使用 window.electronAPI，避免全局 const 宣告衝突
-        // const electronAPI = window.electronAPI; 
+        let temporaryApiKeys = {}; // 用於暫存多個 API Key
 
-        let temporaryApiKey = null; // 用於暫存 API Key
-
-        // 全局錯誤捕獲 (用於前端 JavaScript 錯誤)
         window.onerror = function(message, source, lineno, colno, error) {
             console.error(`Frontend Error: ${message} at ${source}:${lineno}:${colno}`, error);
-            // 移除 alert，避免在某些環境下產生干擾
-            return true; // 防止預設的錯誤處理
+            return true;
         };
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -203,140 +237,158 @@
             const nextToScreen4Button = document.getElementById('nextToScreen4Button');
             const backToScreen3Button = document.getElementById('backToScreen3Button');
             const nextToScreen5Button = document.getElementById('nextToScreen5Button');
-            const testConnectionButton = document.getElementById('testConnectionButton');
             const startInvestigationButton = document.getElementById('startInvestigationButton');
 
-            const apiKeyInputField = document.getElementById('apiKeyInput');
+            const testEtherscanButton = document.getElementById('testEtherscanButton');
+            const testTronscanButton = document.getElementById('testTronscanButton');
+            const etherscanKeyInput = document.getElementById('etherscanKeyInput');
+            const tronscanKeyInput = document.getElementById('tronscanKeyInput');
+            const etherscanResult = document.getElementById('etherscanResult');
+            const tronscanResult = document.getElementById('tronscanResult');
+
             const masterPasswordField = document.getElementById('masterPassword');
             const confirmMasterPasswordField = document.getElementById('confirmMasterPassword');
             const passwordError = document.getElementById('passwordError');
             const saveError = document.getElementById('saveError');
 
-            // 檢查 API Key 是否已配置，如果已配置則跳過 Onboarding Wizard
-            const isConfigured = await window.electronAPI.isApiKeyConfigured(); // 使用 window.electronAPI
-            if (isConfigured) {
-                console.log('API Key is configured. Skipping Onboarding Wizard.');
-                alert('API Key 已配置。TODO: 導向到主應用程式介面或解鎖畫面。');
-                screen1.classList.add('hidden');
-                screen2.classList.add('hidden');
-                screen3.classList.add('hidden');
-                screen4.classList.add('hidden');
-                screen5.classList.remove('hidden'); // 臨時顯示 screen5 作為占位符
-            } else {
-                console.log('API Key not configured. Showing Onboarding Wizard screen 1.');
-                screen1.classList.remove('hidden'); // 確保畫面 1 初始是顯示的
+            // 啟動邏輯：檢查是否已配置
+            try {
+                const isConfigured = await window.electronAPI.isApiKeysConfigured();
+                if (isConfigured) {
+                    console.log('API Keys configured. Skipping Onboarding Wizard.');
+                    alert('API Key 已配置。準備進入主程式。');
+                    screen1.classList.add('hidden');
+                    screen5.classList.remove('hidden'); 
+                } else {
+                    console.log('API Keys not configured. Starting wizard.');
+                    screen1.classList.remove('hidden');
+                }
+            } catch(e) {
+                console.error("Error checking config status:", e);
+                screen1.classList.remove('hidden'); // Fallback
             }
 
             // 畫面切換邏輯
-            if (nextToScreen2Button) {
-                nextToScreen2Button.addEventListener('click', () => {
-                    console.log('nextToScreen2Button clicked.');
-                    screen1.classList.add('hidden');
-                    screen2.classList.remove('hidden');
-                });
-            }
-            if (backToScreen1Button) {
-                backToScreen1Button.addEventListener('click', () => {
-                    console.log('backToScreen1Button clicked.');
-                    screen2.classList.add('hidden');
-                    screen1.classList.remove('hidden');
-                });
-            }
-            if (nextToScreen3Button) {
-                nextToScreen3Button.addEventListener('click', () => {
-                    console.log('nextToScreen3Button clicked.');
-                    screen2.classList.add('hidden');
-                    screen3.classList.remove('hidden');
-                });
-            }
-            if (backToScreen2Button) {
-                backToScreen2Button.addEventListener('click', () => {
-                    console.log('backToScreen2Button clicked.');
-                    screen3.classList.add('hidden');
-                    screen2.classList.remove('hidden');
-                });
-            }
-            if (nextToScreen4Button) {
-                nextToScreen4Button.addEventListener('click', () => {
-                    console.log('nextToScreen4Button clicked.');
-                    temporaryApiKey = apiKeyInputField.value; // 暫存 API Key
-                    screen3.classList.add('hidden');
-                    screen4.classList.remove('hidden'); // 導向主密碼畫面
-                });
-            }
-            if (backToScreen3Button) {
-                backToScreen3Button.addEventListener('click', () => {
-                    console.log('backToScreen3Button clicked.');
-                    screen4.classList.add('hidden');
-                    screen3.classList.remove('hidden');
-                });
-            }
-            if (nextToScreen5Button) {
-                nextToScreen5Button.addEventListener('click', async () => {
-                    console.log('nextToScreen5Button clicked.');
-                    const masterPass = masterPasswordField.value;
-                    const confirmPass = confirmMasterPasswordField.value;
+            nextToScreen2Button?.addEventListener('click', () => {
+                screen1.classList.add('hidden');
+                screen2.classList.remove('hidden');
+            });
+            backToScreen1Button?.addEventListener('click', () => {
+                screen2.classList.add('hidden');
+                screen1.classList.remove('hidden');
+            });
+            nextToScreen3Button?.addEventListener('click', () => {
+                screen2.classList.add('hidden');
+                screen3.classList.remove('hidden');
+            });
+            backToScreen2Button?.addEventListener('click', () => {
+                screen3.classList.add('hidden');
+                screen2.classList.remove('hidden');
+            });
 
-                    saveError.classList.add('hidden');
+            // 測試 Etherscan 連線
+            testEtherscanButton?.addEventListener('click', async () => {
+                const apiKey = etherscanKeyInput.value.trim();
+                etherscanResult.textContent = '測試中...';
+                etherscanResult.className = 'test-result';
+                
+                try {
+                    const result = await window.electronAPI.testApiKey({ provider: 'etherscan', apiKey });
+                    etherscanResult.textContent = result.message;
+                    etherscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
+                } catch(e) {
+                    etherscanResult.textContent = '發生內部錯誤';
+                    etherscanResult.className = 'test-result error-message';
+                }
+            });
 
-                    if (masterPass && masterPass === confirmPass) {
-                        passwordError.classList.add('hidden');
-                        console.log('主密碼設定成功！準備加密 API Key...');
-                        
-                        if (temporaryApiKey) {
-                            const result = await window.electronAPI.saveApiKey({
-                                apiKey: temporaryApiKey,
+            // 測試 Tronscan 連線
+            testTronscanButton?.addEventListener('click', async () => {
+                const apiKey = tronscanKeyInput.value.trim();
+                tronscanResult.textContent = '測試中...';
+                tronscanResult.className = 'test-result';
+                
+                try {
+                    const result = await window.electronAPI.testApiKey({ provider: 'tronscan', apiKey });
+                    tronscanResult.textContent = result.message;
+                    tronscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
+                } catch(e) {
+                    tronscanResult.textContent = '發生內部錯誤';
+                    tronscanResult.className = 'test-result error-message';
+                }
+            });
+
+            // 從畫面 3 到畫面 4，收集 keys
+            nextToScreen4Button?.addEventListener('click', () => {
+                const eKey = etherscanKeyInput.value.trim();
+                const tKey = tronscanKeyInput.value.trim();
+                
+                if (!eKey && !tKey) {
+                    alert("請至少輸入一個 API Key 才能繼續。");
+                    return;
+                }
+
+                temporaryApiKeys = {};
+                if (eKey) temporaryApiKeys.etherscan = eKey;
+                if (tKey) temporaryApiKeys.tronscan = tKey;
+
+                screen3.classList.add('hidden');
+                screen4.classList.remove('hidden'); 
+                
+                // 嘗試強制讓密碼框獲得焦點 (解決 Windows 下潛在的焦點遺失問題)
+                setTimeout(() => {
+                    masterPasswordField.focus();
+                }, 100);
+            });
+
+            backToScreen3Button?.addEventListener('click', () => {
+                screen4.classList.add('hidden');
+                screen3.classList.remove('hidden');
+            });
+
+            // 完成設定：加密並儲存
+            nextToScreen5Button?.addEventListener('click', async () => {
+                const masterPass = masterPasswordField.value;
+                const confirmPass = confirmMasterPasswordField.value;
+
+                saveError.classList.add('hidden');
+
+                if (masterPass && masterPass === confirmPass) {
+                    passwordError.classList.add('hidden');
+                    
+                    if (Object.keys(temporaryApiKeys).length > 0) {
+                        try {
+                            const result = await window.electronAPI.saveApiKeys({
+                                apiKeys: temporaryApiKeys,
                                 masterPassword: masterPass
                             });
 
                             if (result.success) {
-                                temporaryApiKey = null;
+                                temporaryApiKeys = {}; // Clear memory
+                                masterPasswordField.value = '';
+                                confirmMasterPasswordField.value = '';
                                 screen4.classList.add('hidden');
                                 screen5.classList.remove('hidden');
                             } else {
                                 saveError.textContent = `儲存失敗: ${result.message}`;
                                 saveError.classList.remove('hidden');
                             }
-                        } else {
-                            saveError.textContent = 'API Key 未提供，請返回上一步輸入。';
-                            saveError.classList.remove('hidden');
+                        } catch(e) {
+                             saveError.textContent = '發生內部錯誤，無法儲存。';
+                             saveError.classList.remove('hidden');
                         }
                     } else {
-                        passwordError.classList.remove('hidden');
+                        saveError.textContent = '未收集到任何 API Key。';
+                        saveError.classList.remove('hidden');
                     }
-                });
-            }
-            if (testConnectionButton) {
-                testConnectionButton.addEventListener('click', async () => {
-                    console.log('testConnectionButton clicked.');
-                    const apiKey = apiKeyInputField.value;
-                    const result = await window.electronAPI.testApiKey(apiKey);
-                    if (result.success) {
-                        alert('API Key 連線測試成功！');
-                        console.log('API Key 連線測試成功！');
-                    } else {
-                        alert(`API Key 連線測試失敗: ${result.message}`);
-                        console.error('API Key 連線測試失敗:', result.message);
-                    }
-                });
-            }
-            if (startInvestigationButton) {
-                startInvestigationButton.addEventListener('click', async () => {
-                    console.log('startInvestigationButton clicked.');
-                    alert('TODO: 導向主應用程式介面');
-                    // 這裡可以實現解鎖 API Key 的邏輯，如果需要的話
-                    // const masterPasswordForUnlock = prompt('請輸入主密碼以解鎖 API Key：');
-                    // if (masterPasswordForUnlock) {
-                    //     const retrievedApiKey = await window.electronAPI.getApiKey(masterPasswordForUnlock);
-                    //     if (retrievedApiKey.success) {
-                    //         console.log('檢索到的 API Key:', retrievedApiKey.apiKey);
-                    //         alert('API Key 已解鎖，進入主界面。');
-                    //     } else {
-                    //         alert(`解鎖失敗: ${retrievedApiKey.message}`);
-                    //     }
-                    // }
-                });
-            }
+                } else {
+                    passwordError.classList.remove('hidden');
+                }
+            });
+
+            startInvestigationButton?.addEventListener('click', () => {
+                alert('準備導向主應用程式介面！\n(API Keys 已安全儲存在本地)');
+            });
         });
     </script>
 </body>
