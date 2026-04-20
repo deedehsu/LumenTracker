@@ -6,26 +6,20 @@ import sys
 import re
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
-# TODO: 替換為使用者設定的白名單 URL 列表，初期先硬編碼用於測試
-# 實際應用中，這個白名單會從 LumenTracker 的配置中動態載入
+# 白名單 URL 列表
 WHITELISTED_DOMAINS = [
     r"^https?://etherscan\.io/",
     r"^https?://tronscan\.org/",
     r"^https?://www\.judicial\.gov\.tw/",
     r"^https?://judgment\.judicial\.gov\.tw/",
-    r"^https?://www\.judicial\.cy\.gov\.tw/",
 ]
 
 def validate_url(url):
     """驗證 URL 是否有效並在白名單中。"""
     if not url or not isinstance(url, str):
         return False, "URL is required and must be a string."
-    
-    # 基本 URL 格式驗證
     if not re.match(r"^https?://[^\s/$.?#].[^\s]*$", url):
         return False, "Invalid URL format."
-
-    # 白名單驗證
     for pattern in WHITELISTED_DOMAINS:
         if re.match(pattern, url):
             return True, None
@@ -35,76 +29,165 @@ def validate_selector(selector):
     """驗證 CSS 選擇器是否為字串。"""
     if not selector or not isinstance(selector, str):
         return False, "Selector is required and must be a string."
-    # TODO: 更複雜的選擇器安全驗證，防止 XSS 或惡意選擇器
     return True, None
+
+def extract_tw_judgments(page, keyword, max_results=10):
+    """
+    專門用於從台灣司法院裁判書系統擷取結構化資料的函數。
+    注意：這部分邏輯與特定網站結構高度耦合。
+    """
+    target_url = "https://judgment.judicial.gov.tw/FJUD/default.aspx"
+    results = []
+
+    try:
+        # 1. 導航至首頁
+        page.goto(target_url, timeout=60000)
+
+        # 2. 定位輸入框並輸入關鍵字
+        page.locator("#txtKW").fill(keyword)
+
+        # 3. 點擊「送出查詢」按鈕並等待跳轉
+        with page.expect_navigation(timeout=60000):
+            page.locator("#btnSimpleQry").click()
+
+        # 4. 等待 iframe 出現並切換焦點
+        frame_element = page.wait_for_selector("iframe[name='iframe-data']", timeout=30000)
+        frame = frame_element.content_frame()
+        
+        if not frame:
+             return {"status": "error", "message": "找不到搜尋結果框架 (iframe)。"}
+
+        # 5. 等待並擷取判決連結
+        try:
+            frame.wait_for_selector("a[href*='data.aspx']", timeout=15000)
+            judgment_links = frame.locator("a[href*='data.aspx']").all()
+            limit = min(len(judgment_links), max_results)
+            
+            for i in range(limit):
+                link_element = judgment_links[i]
+                title = link_element.inner_text().strip()
+                href = link_element.get_attribute("href")
+                full_url = f"https://judgment.judicial.gov.tw/FJUD/{href}"
+                
+                date_str = ""
+                reason_str = ""
+                
+                try:
+                    parent_row = link_element.locator("xpath=ancestor::tr").first
+                    if parent_row:
+                        row_text = parent_row.inner_text()
+                        parts = [p.strip() for p in row_text.split('\t') if p.strip()]
+                        if len(parts) >= 4:
+                            date_str = parts[2]
+                            reason_str = parts[3]
+                except Exception:
+                    pass # 忽略單筆額外資訊解析錯誤
+
+                results.append({
+                    "title": title,
+                    "date": date_str,
+                    "reason": reason_str,
+                    "url": full_url
+                })
+
+        except PlaywrightTimeoutError:
+            return {"status": "success", "data": [], "message": "查無結果"}
+
+        return {
+            "status": "success",
+            "action": "search_judgments",
+            "keyword": keyword,
+            "count": len(results),
+            "data": results
+        }
+
+    except Exception as e:
+        return {"status": "error", "message": f"擷取判決書資料失敗: {str(e)}"}
 
 
 def run_browser_automation(action, url=None, selector=None, input_data=None):
     """
-    執行瀏覽器自動化任務。
-    :param action: 要執行的動作 (e.g., 'fetch_text', 'screenshot').
-    :param url: 目標網頁 URL。
-    :param selector: CSS 選擇器，用於定位網頁元素。
-    :param input_data: 表單填寫數據 (字典格式)。
-    :return: 任務執行結果。
+    執行瀏覽器自動化任務的主入口。
     """
-    # 1. 輸入驗證 (URL 和 Selector)
-    is_valid_url, url_error = validate_url(url)
-    if not is_valid_url:
-        return json.dumps({"status": "error", "message": url_error}, ensure_ascii=False)
-    
-    if action == "fetch_text" or action == "screenshot": # 這些動作需要選擇器
+    # 對於非特定網站的通用操作，驗證 URL
+    if action in ["fetch_text", "screenshot"]:
+        is_valid_url, url_error = validate_url(url)
+        if not is_valid_url:
+            return json.dumps({"status": "error", "message": url_error}, ensure_ascii=False)
+        
         is_valid_selector, selector_error = validate_selector(selector)
         if not is_valid_selector:
             return json.dumps({"status": "error", "message": selector_error}, ensure_ascii=False)
 
-    print(f"Executing browser automation action: {action}")
-    print(f"URL: {url}, Selector: {selector}, Input Data: {input_data}")
+    # 針對特定的擷取任務，驗證關鍵字
+    elif action == "search_judgments":
+        if not input_data or 'keyword' not in input_data:
+             return json.dumps({"status": "error", "message": "Action 'search_judgments' requires 'keyword' in input_data."}, ensure_ascii=False)
 
     result = {"status": "error", "message": "Unknown error during automation."}
 
     try:
         with sync_playwright() as p:
-            # 使用 Chromium 瀏覽器
-            browser = p.chromium.launch(headless=True) # 使用無頭模式
-            page = browser.new_page()
+            # 啟動無頭瀏覽器，加入 User-Agent 避免被擋
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
             
             try:
-                page.goto(url, timeout=30000) # 30秒超時
-                
+                # 處理通用動作
                 if action == "fetch_text":
-                    try:
-                        element = page.locator(selector)
-                        text_content = element.inner_text()
-                        result = {"status": "success", "action": action, "url": url, "selector": selector, "data": text_content}
-                    except PlaywrightTimeoutError:
-                        result = {"status": "error", "message": f"Timeout waiting for selector '{selector}' on URL '{url}'."}
-                    except Exception as e:
-                        result = {"status": "error", "message": f"Failed to fetch text: {str(e)}"}
+                    page.goto(url, timeout=30000)
+                    element = page.locator(selector)
+                    text_content = element.inner_text()
+                    result = {"status": "success", "action": action, "url": url, "selector": selector, "data": text_content}
                 
                 elif action == "screenshot":
-                    # TODO: 實現截圖邏輯，保存到指定路徑並返回路徑
+                    page.goto(url, timeout=30000)
                     screenshot_path = f"screenshot_{page.title().replace(' ', '_')}.png"
                     page.screenshot(path=screenshot_path)
                     result = {"status": "success", "action": action, "url": url, "selector": selector, "image_path": screenshot_path, "message": "Screenshot simulated and saved."}
 
-                # TODO: 擴展其他動作如 fill_form 等
+                # 處理特定網站擷取任務
+                elif action == "search_judgments":
+                    keyword = input_data['keyword']
+                    max_res = input_data.get('max_results', 10)
+                    # 呼叫專門的擷取邏輯，並直接將其結果作為返回的字典
+                    extracted_data = extract_tw_judgments(page, keyword, max_res)
+                    result = extracted_data
 
                 else:
                     result = {"status": "error", "message": f"Unsupported action: {action}"}
 
             except PlaywrightTimeoutError:
-                result = {"status": "error", "message": f"Navigation to '{url}' timed out."}
+                result = {"status": "error", "message": f"操作超時 (URL: {url if url else 'N/A'})."}
             except Exception as e:
-                result = {"status": "error", "message": f"Navigation or page interaction failed: {str(e)}"}
+                result = {"status": "error", "message": f"網頁互動失敗: {str(e)}"}
             finally:
                 browser.close()
 
     except Exception as e:
-        result = {"status": "error", "message": f"Playwright launch failed: {str(e)}"}
+        result = {"status": "error", "message": f"Playwright 啟動失敗: {str(e)}"}
 
     return json.dumps(result, ensure_ascii=False)
 
 
 if __name__ == '__main__':
-    # 這是技能被調用時的入口點。預期通過命令行參數接收 JSON 格式的輸入。\n    if len(sys.argv) > 1:\n        try:\n            input_json = sys.argv[1]\n            args = json.loads(input_json)\n            output = run_browser_automation(**args)\n            print(output)\n        except Exception as e:\n            print(json.dumps({\"status\": \"error\", \"message\": str(e)}, ensure_ascii=False))\n    else:\n        print(json.dumps({\"status\": \"error\", \"message\": \"No input arguments provided\"}, ensure_ascii=False))\n
+    if len(sys.argv) > 1:
+        try:
+            input_json = sys.argv[1]
+            args = json.loads(input_json)
+            output = run_browser_automation(**args)
+            print(output)
+        except Exception as e:
+            print(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False))
+    else:
+        # 如果沒有輸入參數，則執行一個預設的自我測試 (搜尋詐欺 虛擬貨幣)
+        print("沒有提供參數。執行預設測試：搜尋司法院裁判書系統...")
+        test_args = {
+            "action": "search_judgments",
+            "input_data": {"keyword": "詐欺 虛擬貨幣", "max_results": 3}
+        }
+        output = run_browser_automation(**test_args)
+        print(output)
