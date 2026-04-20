@@ -55,29 +55,43 @@ function decrypt(text, masterPassword) {
     return decrypted.toString();
 }
 
-// Etherscan API Key 有效性測試函數
+// Etherscan API Key 有效性測試函數 (強化版驗證)
 async function testEtherscanApiKey(apiKey) {
     const ETHERSCAN_API_URL = 'https://api.etherscan.io/api';
+    
+    // 基本格式驗證：Etherscan API Key 通常是 34 個字元的英數字
+    if (!apiKey || apiKey.length < 20) {
+        return { success: false, message: 'API Key 格式不正確或過短。' };
+    }
+
     try {
+        // 使用 account 模組的 balance action 進行測試，這通常需要更嚴格的 API 驗證
         const response = await axios.get(ETHERSCAN_API_URL, {
             params: {
-                module: 'proxy',
-                action: 'eth_blockNumber',
+                module: 'account',
+                action: 'balance',
+                address: '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae', // 任意一個有效的以太坊地址
+                tag: 'latest',
                 apikey: apiKey
             }
         });
 
-        if (response.data && response.data.error && response.data.error.message.includes('Invalid API Key')) {
-            return { success: false, message: 'Invalid Etherscan API Key.' };
+        // 嚴格檢查 Etherscan 的標準 JSON 響應格式
+        if (response.data) {
+            if (response.data.status === '1' && response.data.message === 'OK') {
+                return { success: true, message: 'Etherscan API Key 連線測試成功！' };
+            } else if (response.data.status === '0') {
+                // Etherscan 明確回報錯誤 (例如 Invalid API Key)
+                return { success: false, message: `測試失敗: ${response.data.result}` };
+            }
         }
-        if (response.data && response.data.result) {
-            return { success: true, message: 'Etherscan API Key is valid.' };
-        }
-        return { success: false, message: 'Unexpected Etherscan API response.' };
+        
+        return { success: false, message: '收到未預期的 Etherscan API 響應格式。' };
 
     } catch (error) {
         console.error('Error testing Etherscan API Key:', error.message);
-        return { success: false, message: `Connection test failed: ${error.message}` };
+        // 處理 HTTP 錯誤 (如 403 Forbidden, 網路斷線等)
+        return { success: false, message: `連線測試失敗 (網路或伺服器錯誤): ${error.message}` };
     }
 }
 
