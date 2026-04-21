@@ -117,7 +117,7 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
                 
                 if output_format.lower() in ["csv", "both"]:
                     csv_path = os.path.join(output_dir, f"{base_filename}.csv")
-                    with open(csv_path, 'w', encoding='utf-8', newline='') as f:
+                    with open(csv_path, 'w', encoding='utf-8-sig', newline='') as f:
                         writer = csv.writer(f)
                         # 寫入標頭
                         writer.writerow(["Title", "Date", "Reason", "URL"])
