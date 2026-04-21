@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>LumenTracker - 首次設定</title>
+    <title>LumenTracker</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -86,13 +85,18 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 1em;
-            box-sizing: border-box; /* Ensure padding doesn't affect width */
+            box-sizing: border-box;
         }
         .hidden {
             display: none;
         }
         .checkmark {
             color: #4CAF50;
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        .lock-icon {
+            color: #007bff;
             font-size: 4em;
             margin-bottom: 20px;
         }
@@ -124,6 +128,85 @@
             margin-top: 5px;
             font-weight: bold;
         }
+        /* Dashboard styles */
+        .dashboard-layout {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            background-color: #f0f2f5;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .sidebar h2 {
+            color: #ecf0f1;
+            border-bottom: 1px solid #34495e;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+        .sidebar li {
+            padding: 10px 0;
+            cursor: pointer;
+            border-bottom: 1px solid #34495e;
+        }
+        .sidebar li:hover {
+            color: #3498db;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        .search-bar {
+            display: flex;
+            margin-bottom: 30px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .search-bar input {
+            flex-grow: 1;
+            padding: 12px;
+            font-size: 1.1em;
+            border: 1px solid #ced4da;
+            border-radius: 4px 0 0 4px;
+            outline: none;
+        }
+        .search-bar button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+        }
+        .search-bar button:hover {
+            background-color: #218838;
+        }
+        .workspace {
+            flex-grow: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #aaa;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -136,7 +219,7 @@
         <div class="button-group">
             <button class="button" id="nextToScreen2Button">開始設定</button>
         </div>
-        <p class="disclaimer">請詳閱我們的<a href="#" onclick="return false;">隱私政策與資安聲明</a></p>
+        <p class="disclaimer">請詳閱我們的隱私政策與資安聲明</p>
     </div>
 
     <!-- 畫面 2: 什麼是區塊鏈 API Key？ -->
@@ -159,7 +242,7 @@
         <!-- Etherscan 區塊 -->
         <div class="api-section">
             <h3>1. Etherscan API Key (必備，支援以太坊及 EVM 兼容鏈)</h3>
-            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">請前往 <a href="https://etherscan.io/register" target="_blank">etherscan.io</a> 註冊並在個人介面的 API-KEYs 中新增金鑰。</p>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">請前往 etherscan.io 註冊並新增金鑰。</p>
             <div class="input-group" style="flex-direction: row; justify-content: center;">
                 <input type="text" id="etherscanKeyInput" placeholder="貼上 Etherscan API Key">
                 <button class="button" id="testEtherscanButton" style="padding: 10px 15px; font-size: 0.9em;">測試連線</button>
@@ -170,7 +253,7 @@
         <!-- Tronscan 區塊 -->
         <div class="api-section">
             <h3>2. Tronscan API Key (建議，支援波場鏈與 TRC-20 USDT 分析)</h3>
-            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">請前往 <a href="https://tronscan.org/#/developer/api" target="_blank">tronscan.org</a> 登入並在「開發者 -> API Key」中產生。</p>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">請前往 tronscan.org 登入並在「開發者」中產生。</p>
             <div class="input-group" style="flex-direction: row; justify-content: center;">
                 <input type="text" id="tronscanKeyInput" placeholder="貼上 Tronscan API Key (選填)">
                 <button class="button" id="testTronscanButton" style="padding: 10px 15px; font-size: 0.9em;">測試連線</button>
@@ -188,135 +271,142 @@
     <div id="screen4" class="container hidden">
         <h2>設定主密碼</h2>
         <p>為了確保您的 API Key 和其他敏感資料的安全，我們建議設定一個**主密碼**。</p>
-        <p>此密碼將用於加密您的 API Key，並在每次啟動軟體時要求輸入，以保護您的隱私。</p>
+        <p>此密碼將用於使用軍規加密 (AES-256) 保護您的 API Key，並在每次啟動軟體時要求輸入。</p>
         <div class="input-group">
-            <!-- 加入 autocomplete 屬性以幫助某些環境正確識別和聚焦 -->
             <input type="password" id="masterPassword" placeholder="請輸入主密碼" autocomplete="new-password" autofocus>
             <input type="password" id="confirmMasterPassword" placeholder="請再次輸入主密碼" autocomplete="new-password">
-            <p class="error-message hidden" id="passwordError">密碼不一致或不符合要求！</p>
+            <p class="error-message hidden" id="passwordError">密碼不一致或未填寫！</p>
             <p class="error-message hidden" id="saveError">API Key 儲存失敗，請重試。</p>
         </div>
         <div class="button-group">
             <button class="button secondary" id="backToScreen3Button">上一步</button>
-            <button class="button" id="nextToScreen5Button">加密並儲存</button>
+            <button class="button" id="submitSetupButton">加密並完成設定</button>
         </div>
     </div>
 
-    <!-- 畫面 5: 設定完成 -->
-    <div id="screen5" class="container hidden">
-        <div class="checkmark">✅</div>
-        <h2>設定完成！</h2>
-        <p>您的專屬通道已建立。這把鑰匙已使用高等級加密儲存於您的電腦中。</p>
-        <p>現在，請輸入您要追查的第一個錢包地址，我們開始破解迷宮。</p>
+    <!-- 畫面 5: 解鎖畫面 (Unlock Screen) -->
+    <div id="unlockScreen" class="container hidden">
+        <div class="lock-icon">🔒</div>
+        <h2>系統已鎖定</h2>
+        <p>您的 API Keys 已安全地存放在本地。</p>
+        <p>請輸入您的主密碼以解鎖 LumenTracker 並開始調查。</p>
+        <div class="input-group">
+            <input type="password" id="unlockPassword" placeholder="請輸入主密碼" autocomplete="current-password" autofocus>
+            <p class="error-message hidden" id="unlockError">密碼錯誤或資料損壞！請重試。</p>
+        </div>
         <div class="button-group">
-            <button class="button" id="startInvestigationButton">開始調查</button>
+            <button class="button" id="unlockButton">解鎖並進入系統</button>
+        </div>
+    </div>
+
+    <!-- 主應用程式介面骨架 (Main Dashboard) -->
+    <div id="mainDashboard" class="dashboard-layout hidden">
+        <!-- 側邊欄 -->
+        <div class="sidebar">
+            <h2>LumenTracker</h2>
+            <ul>
+                <li style="color: #4CAF50; font-weight: bold;">🔍 新的調查</li>
+                <li>📁 歷史案件 (開發中)</li>
+                <li>⚙️ 系統設定 (開發中)</li>
+            </ul>
+        </div>
+        <!-- 主要內容區 -->
+        <div class="main-content">
+            <!-- 搜尋列 -->
+            <div class="search-bar">
+                <input type="text" id="addressSearchInput" placeholder="請輸入要調查的錢包地址 (例如 ETH, TRX 地址) 或交易 TxHash...">
+                <button id="startSearchBtn">開始追蹤</button>
+            </div>
+            <!-- 工作區 -->
+            <div class="workspace">
+                <div style="text-align: center;">
+                    <p style="font-size: 1.5em; margin-bottom: 10px;">[分析工作區準備就緒]</p>
+                    <p>API Keys 已成功載入記憶體。</p>
+                    <p>請在上方的搜尋列輸入目標，開始建立幣流關聯圖。</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        let temporaryApiKeys = {}; // 用於暫存多個 API Key
+        let temporaryApiKeys = {}; 
+        let currentLumenApiKeys = null; // 用於儲存解鎖後的 API Keys 供主系統使用
 
         window.onerror = function(message, source, lineno, colno, error) {
             console.error(`Frontend Error: ${message} at ${source}:${lineno}:${colno}`, error);
-            return true;
+            return true; 
         };
 
+        // 隱藏所有畫面的輔助函數
+        function hideAllScreens() {
+            ['screen1', 'screen2', 'screen3', 'screen4', 'unlockScreen', 'mainDashboard'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            // 重置一些通用狀態
+            document.getElementById('passwordError').classList.add('hidden');
+            document.getElementById('saveError').classList.add('hidden');
+            document.getElementById('unlockError').classList.add('hidden');
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('DOMContentLoaded fired.');
-            
             const screen1 = document.getElementById('screen1');
             const screen2 = document.getElementById('screen2');
             const screen3 = document.getElementById('screen3');
             const screen4 = document.getElementById('screen4');
-            const screen5 = document.getElementById('screen5');
+            const unlockScreen = document.getElementById('unlockScreen');
+            const mainDashboard = document.getElementById('mainDashboard');
 
+            // 按鈕
             const nextToScreen2Button = document.getElementById('nextToScreen2Button');
             const backToScreen1Button = document.getElementById('backToScreen1Button');
             const nextToScreen3Button = document.getElementById('nextToScreen3Button');
             const backToScreen2Button = document.getElementById('backToScreen2Button');
             const nextToScreen4Button = document.getElementById('nextToScreen4Button');
             const backToScreen3Button = document.getElementById('backToScreen3Button');
-            const nextToScreen5Button = document.getElementById('nextToScreen5Button');
-            const startInvestigationButton = document.getElementById('startInvestigationButton');
-
+            const submitSetupButton = document.getElementById('submitSetupButton');
+            const unlockButton = document.getElementById('unlockButton');
+            const startSearchBtn = document.getElementById('startSearchBtn');
             const testEtherscanButton = document.getElementById('testEtherscanButton');
             const testTronscanButton = document.getElementById('testTronscanButton');
+
+            // 輸入框與錯誤訊息
             const etherscanKeyInput = document.getElementById('etherscanKeyInput');
             const tronscanKeyInput = document.getElementById('tronscanKeyInput');
             const etherscanResult = document.getElementById('etherscanResult');
             const tronscanResult = document.getElementById('tronscanResult');
-
             const masterPasswordField = document.getElementById('masterPassword');
             const confirmMasterPasswordField = document.getElementById('confirmMasterPassword');
+            const unlockPasswordField = document.getElementById('unlockPassword');
+            const addressSearchInput = document.getElementById('addressSearchInput');
+            
             const passwordError = document.getElementById('passwordError');
             const saveError = document.getElementById('saveError');
+            const unlockError = document.getElementById('unlockError');
 
-            // 啟動邏輯：檢查是否已配置
+            // --- 啟動路由邏輯 ---
             try {
                 const isConfigured = await window.electronAPI.isApiKeysConfigured();
+                hideAllScreens();
                 if (isConfigured) {
-                    console.log('API Keys configured. Skipping Onboarding Wizard.');
-                    alert('API Key 已配置。準備進入主程式。');
-                    screen1.classList.add('hidden');
-                    screen5.classList.remove('hidden'); 
+                    console.log('API Keys configured. Showing Unlock Screen.');
+                    unlockScreen.classList.remove('hidden'); 
+                    setTimeout(() => unlockPasswordField.focus(), 100);
                 } else {
                     console.log('API Keys not configured. Starting wizard.');
                     screen1.classList.remove('hidden');
                 }
             } catch(e) {
                 console.error("Error checking config status:", e);
+                hideAllScreens();
                 screen1.classList.remove('hidden'); // Fallback
             }
 
-            // 畫面切換邏輯
-            nextToScreen2Button?.addEventListener('click', () => {
-                screen1.classList.add('hidden');
-                screen2.classList.remove('hidden');
-            });
-            backToScreen1Button?.addEventListener('click', () => {
-                screen2.classList.add('hidden');
-                screen1.classList.remove('hidden');
-            });
-            nextToScreen3Button?.addEventListener('click', () => {
-                screen2.classList.add('hidden');
-                screen3.classList.remove('hidden');
-            });
-            backToScreen2Button?.addEventListener('click', () => {
-                screen3.classList.add('hidden');
-                screen2.classList.remove('hidden');
-            });
-
-            // 測試 Etherscan 連線
-            testEtherscanButton?.addEventListener('click', async () => {
-                const apiKey = etherscanKeyInput.value.trim();
-                etherscanResult.textContent = '測試中...';
-                etherscanResult.className = 'test-result';
-                
-                try {
-                    const result = await window.electronAPI.testApiKey({ provider: 'etherscan', apiKey });
-                    etherscanResult.textContent = result.message;
-                    etherscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
-                } catch(e) {
-                    etherscanResult.textContent = '發生內部錯誤';
-                    etherscanResult.className = 'test-result error-message';
-                }
-            });
-
-            // 測試 Tronscan 連線
-            testTronscanButton?.addEventListener('click', async () => {
-                const apiKey = tronscanKeyInput.value.trim();
-                tronscanResult.textContent = '測試中...';
-                tronscanResult.className = 'test-result';
-                
-                try {
-                    const result = await window.electronAPI.testApiKey({ provider: 'tronscan', apiKey });
-                    tronscanResult.textContent = result.message;
-                    tronscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
-                } catch(e) {
-                    tronscanResult.textContent = '發生內部錯誤';
-                    tronscanResult.className = 'test-result error-message';
-                }
-            });
+            // --- Onboarding 畫面切換邏輯 ---
+            nextToScreen2Button?.addEventListener('click', () => { hideAllScreens(); screen2.classList.remove('hidden'); });
+            backToScreen1Button?.addEventListener('click', () => { hideAllScreens(); screen1.classList.remove('hidden'); });
+            nextToScreen3Button?.addEventListener('click', () => { hideAllScreens(); screen3.classList.remove('hidden'); });
+            backToScreen2Button?.addEventListener('click', () => { hideAllScreens(); screen2.classList.remove('hidden'); });
+            backToScreen3Button?.addEventListener('click', () => { hideAllScreens(); screen3.classList.remove('hidden'); });
 
             // 從畫面 3 到畫面 4，收集 keys
             nextToScreen4Button?.addEventListener('click', () => {
@@ -327,67 +417,146 @@
                     alert("請至少輸入一個 API Key 才能繼續。");
                     return;
                 }
-
                 temporaryApiKeys = {};
                 if (eKey) temporaryApiKeys.etherscan = eKey;
                 if (tKey) temporaryApiKeys.tronscan = tKey;
 
-                screen3.classList.add('hidden');
+                hideAllScreens();
                 screen4.classList.remove('hidden'); 
-                
-                // 嘗試強制讓密碼框獲得焦點 (解決 Windows 下潛在的焦點遺失問題)
-                setTimeout(() => {
-                    masterPasswordField.focus();
-                }, 100);
+                setTimeout(() => masterPasswordField.focus(), 100);
             });
 
-            backToScreen3Button?.addEventListener('click', () => {
-                screen4.classList.add('hidden');
-                screen3.classList.remove('hidden');
-            });
-
-            // 完成設定：加密並儲存
-            nextToScreen5Button?.addEventListener('click', async () => {
-                const masterPass = masterPasswordField.value;
-                const confirmPass = confirmMasterPasswordField.value;
-
-                saveError.classList.add('hidden');
-
-                if (masterPass && masterPass === confirmPass) {
-                    passwordError.classList.add('hidden');
-                    
-                    if (Object.keys(temporaryApiKeys).length > 0) {
-                        try {
-                            const result = await window.electronAPI.saveApiKeys({
-                                apiKeys: temporaryApiKeys,
-                                masterPassword: masterPass
-                            });
-
-                            if (result.success) {
-                                temporaryApiKeys = {}; // Clear memory
-                                masterPasswordField.value = '';
-                                confirmMasterPasswordField.value = '';
-                                screen4.classList.add('hidden');
-                                screen5.classList.remove('hidden');
-                            } else {
-                                saveError.textContent = `儲存失敗: ${result.message}`;
-                                saveError.classList.remove('hidden');
-                            }
-                        } catch(e) {
-                             saveError.textContent = '發生內部錯誤，無法儲存。';
-                             saveError.classList.remove('hidden');
-                        }
-                    } else {
-                        saveError.textContent = '未收集到任何 API Key。';
-                        saveError.classList.remove('hidden');
-                    }
-                } else {
-                    passwordError.classList.remove('hidden');
+            // --- 測試連線邏輯 ---
+            testEtherscanButton?.addEventListener('click', async () => {
+                const apiKey = etherscanKeyInput.value.trim();
+                etherscanResult.textContent = '測試中...';
+                etherscanResult.className = 'test-result';
+                try {
+                    const result = await window.electronAPI.testApiKey({ provider: 'etherscan', apiKey });
+                    etherscanResult.textContent = result.message;
+                    etherscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
+                } catch(e) {
+                    etherscanResult.textContent = '發生內部錯誤';
+                    etherscanResult.className = 'test-result error-message';
                 }
             });
 
-            startInvestigationButton?.addEventListener('click', () => {
-                alert('準備導向主應用程式介面！\n(API Keys 已安全儲存在本地)');
+            testTronscanButton?.addEventListener('click', async () => {
+                const apiKey = tronscanKeyInput.value.trim();
+                tronscanResult.textContent = '測試中...';
+                tronscanResult.className = 'test-result';
+                try {
+                    const result = await window.electronAPI.testApiKey({ provider: 'tronscan', apiKey });
+                    tronscanResult.textContent = result.message;
+                    tronscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
+                } catch(e) {
+                    tronscanResult.textContent = '發生內部錯誤';
+                    tronscanResult.className = 'test-result error-message';
+                }
+            });
+
+            // --- 完成設定：加密並儲存 ---
+            submitSetupButton?.addEventListener('click', async () => {
+                const masterPass = masterPasswordField.value;
+                const confirmPass = confirmMasterPasswordField.value;
+                saveError.classList.add('hidden');
+                passwordError.classList.add('hidden');
+
+                if (!masterPass || masterPass !== confirmPass) {
+                    passwordError.classList.remove('hidden');
+                    return;
+                }
+
+                if (Object.keys(temporaryApiKeys).length > 0) {
+                    submitSetupButton.disabled = true;
+                    submitSetupButton.textContent = "加密中...";
+                    try {
+                        const result = await window.electronAPI.saveApiKeys({
+                            apiKeys: temporaryApiKeys,
+                            masterPassword: masterPass
+                        });
+
+                        if (result.success) {
+                            temporaryApiKeys = {}; // Clear memory
+                            masterPasswordField.value = '';
+                            confirmMasterPasswordField.value = '';
+                            
+                            // 設定完成後，直接跳轉到「解鎖畫面」讓使用者輸入剛才設定的密碼來進入系統
+                            // 這是最好的驗證機制
+                            hideAllScreens();
+                            unlockScreen.classList.remove('hidden');
+                            setTimeout(() => unlockPasswordField.focus(), 100);
+                        } else {
+                            saveError.textContent = `儲存失敗: ${result.message}`;
+                            saveError.classList.remove('hidden');
+                        }
+                    } catch(e) {
+                         saveError.textContent = '發生內部錯誤，無法儲存。';
+                         saveError.classList.remove('hidden');
+                    } finally {
+                        submitSetupButton.disabled = false;
+                        submitSetupButton.textContent = "加密並完成設定";
+                    }
+                } else {
+                    saveError.textContent = '未收集到任何 API Key。';
+                    saveError.classList.remove('hidden');
+                }
+            });
+
+            // --- 解鎖邏輯 ---
+            unlockButton?.addEventListener("click", async () => {
+                const password = unlockPasswordField.value;
+                unlockError.classList.add("hidden");
+                
+                if(!password) {
+                    unlockError.textContent = "請輸入主密碼。";
+                    unlockError.classList.remove("hidden");
+                    return;
+                }
+
+                unlockButton.textContent = "解鎖中...";
+                unlockButton.disabled = true;
+
+                try {
+                    const result = await window.electronAPI.getApiKeys(password);
+                    if (result.success) {
+                        console.log("解鎖成功！API Keys 已載入記憶體。");
+                        currentLumenApiKeys = result.apiKeys; // 將解密後的 Keys 存在前端變數
+                        
+                        unlockPasswordField.value = ""; // 清除密碼框
+                        hideAllScreens();
+                        mainDashboard.classList.remove("hidden"); // 正式進入主介面！
+                        setTimeout(() => addressSearchInput.focus(), 100);
+                    } else {
+                        unlockError.textContent = "密碼錯誤或資料損壞！請重試。";
+                        unlockError.classList.remove("hidden");
+                        unlockPasswordField.value = ""; 
+                        setTimeout(() => unlockPasswordField.focus(), 100);
+                    }
+                } catch(e) {
+                    unlockError.textContent = "發生內部錯誤，無法解鎖。";
+                    unlockError.classList.remove("hidden");
+                } finally {
+                    unlockButton.textContent = "解鎖並進入系統";
+                    unlockButton.disabled = false;
+                }
+            });
+            
+            // 允許在解鎖輸入框按 Enter 鍵解鎖
+            unlockPasswordField?.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    unlockButton.click();
+                }
+            });
+
+            // --- 主介面邏輯 (開發中) ---
+            startSearchBtn?.addEventListener('click', () => {
+                const address = addressSearchInput.value.trim();
+                if(address) {
+                     alert(`[開發中功能]\n您輸入的地址是: ${address}\n系統已經準備好使用您解鎖的 API Keys (${Object.keys(currentLumenApiKeys).join(', ')}) 向區塊鏈節點發起查詢。`);
+                } else {
+                     alert("請輸入要調查的錢包地址或 TxHash。");
+                }
             });
         });
     </script>
