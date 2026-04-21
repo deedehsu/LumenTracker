@@ -131,8 +131,29 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
                             full_content = "[已存在本地紀錄，略過擷取]"
 
                     # 6. Deep Scraping: 擷取全文 (如果啟用且非重複)
+                    local_file_path = ""
                     if fetch_full_text and not is_duplicate:
                         full_content = await fetch_judgment_content(context, full_url, logger=logger)
+                        
+                        # 儲存為獨立的 TXT 檔案
+                        if full_content and not full_content.startswith("[Error"):
+                            safe_title = "".join([c if c.isalnum() or c in " _-" else "_" for c in title])
+                            txt_filename = f"{safe_title}.txt"
+                            txt_filepath = os.path.join(output_dir, txt_filename)
+                            
+                            try:
+                                with open(txt_filepath, 'w', encoding='utf-8') as f:
+                                    f.write(f"標題: {title}\n")
+                                    f.write(f"日期: {date_str}\n")
+                                    f.write(f"案由: {reason_str}\n")
+                                    f.write(f"網址: {full_url}\n")
+                                    f.write("-" * 40 + "\n\n")
+                                    f.write(full_content)
+                                local_file_path = txt_filename
+                                logger(f"    📄 判決書已存為: {txt_filename}")
+                            except Exception as save_e:
+                                logger(f"    ❌ 儲存 TXT 失敗: {save_e}")
+                        
                         # 加入隨機延遲 (1~3秒)，避免被判定為惡意爬蟲
                         delay = random.uniform(1.0, 3.0)
                         await asyncio.sleep(delay)
@@ -146,6 +167,7 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
                         "date": date_str,
                         "reason": reason_str,
                         "url": full_url,
+                        "local_file": local_file_path if fetch_full_text and not is_duplicate else "[未啟用全文或已存在本地]",
                         "content": full_content if fetch_full_text else "[未啟用全文擷取]"
                     })
 
@@ -179,10 +201,10 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
                     csv_path = os.path.join(output_dir, f"{base_filename}.csv")
                     with open(csv_path, 'w', encoding='utf-8-sig', newline='') as f:
                         writer = csv.writer(f)
-                        writer.writerow(["Title", "Date", "Reason", "URL", "Content"])
+                        writer.writerow(["Title", "Date", "Reason", "URL", "Local_File"])
                         for row in results:
-                            writer.writerow([row['title'], row['date'], row['reason'], row['url'], row['content']])
-                    logger(f"✅ 成功儲存 CSV 檔案: {csv_path}")
+                            writer.writerow([row['title'], row['date'], row['reason'], row['url'], row.get('local_file', '')])
+                    logger(f"✅ 成功儲存 CSV 檔案 (精簡目錄版): {csv_path}")
 
             # 將更新後的 history 一併回傳給 GUI 去儲存
             output_data['history'] = history

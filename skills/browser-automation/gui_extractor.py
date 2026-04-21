@@ -81,6 +81,9 @@ class JudgmentExtractorGUI:
         self.start_button = ttk.Button(button_frame, text="開始擷取", command=self.start_scraping)
         self.start_button.pack(side=tk.LEFT, padx=(0, 10))
 
+        self.open_folder_button = ttk.Button(button_frame, text="打開結果資料夾", command=self.open_results_folder)
+        self.open_folder_button.pack(side=tk.LEFT)
+
         # --- 日誌區塊 ---
         log_frame = ttk.LabelFrame(self.root, text="執行日誌", padding=(10, 10))
         log_frame.pack(fill=tk.BOTH, expand=True)
@@ -115,6 +118,23 @@ class JudgmentExtractorGUI:
             self.start_button.configure(text="擷取中...", state='disabled')
         else:
             self.start_button.configure(text="開始擷取", state='normal')
+
+    def open_results_folder(self):
+        """打開 results 資料夾"""
+        results_dir = os.path.abspath("results")
+        os.makedirs(results_dir, exist_ok=True)
+        try:
+            if os.name == 'nt': # Windows
+                os.startfile(results_dir)
+            elif os.name == 'posix': # macOS
+                import subprocess
+                subprocess.call(['open', results_dir])
+            else: # Linux
+                import subprocess
+                subprocess.call(['xdg-open', results_dir])
+            self.log(f"已開啟資料夾: {results_dir}")
+        except Exception as e:
+            self.log(f"無法開啟資料夾: {e}")
 
     def start_scraping(self):
         """按鈕點擊事件：啟動背景執行緒來跑異步的爬蟲"""
