@@ -9,11 +9,11 @@ import argparse
 import random
 from datetime import datetime
 
-async def fetch_judgment_content(context, url):
+async def fetch_judgment_content(context, url, logger=print):
     """
     導航至單一判決書頁面並擷取全文內容。
     """
-    print(f"    -> 正在擷取全文: {url}")
+    logger(f"    -> 正在擷取全文: {url}")
     content_text = ""
     try:
         # 開啟一個新的分頁來抓全文，避免干擾列表頁
@@ -26,14 +26,14 @@ async def fetch_judgment_content(context, url):
             content_element = await page.wait_for_selector("div.htmlformat", timeout=10000)
             content_text = await content_element.inner_text()
         except PlaywrightTimeoutError:
-            print("      (找不到 .htmlformat 標籤，嘗試抓取整個頁面內文...)")
+            logger("      (找不到 .htmlformat 標籤，嘗試抓取整個頁面內文...)")
             content_text = await page.inner_text("body")
             
         # 簡單清理：移除多餘的空白列
         content_text = "\n".join([line for line in content_text.splitlines() if line.strip()])
         
     except Exception as e:
-        print(f"    ❌ 擷取全文失敗: {e}")
+        logger(f"    ❌ 擷取全文失敗: {e}")
         content_text = f"[Error fetching content: {str(e)}]"
     finally:
         if 'page' in locals() and not page.is_closed():
@@ -41,16 +41,21 @@ async def fetch_judgment_content(context, url):
             
     return content_text
 
-async def search_and_extract_judgments(keyword, max_results=10, output_format="json", output_dir="results", fetch_full_text=False):
+async def search_and_extract_judgments(keyword, max_results=10, output_format="json", output_dir="results", fetch_full_text=False, logger=print, history=None):
     """
     使用 Playwright 在司法院裁判書系統搜尋並擷取結構化結果。
+    加入 logger 參數以支援 GUI 回報進度，加入 history 參數以支援防重複機制。
     """
     target_url = "https://judgment.judicial.gov.tw/FJUD/default.aspx"
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 啟動自動化搜尋：關鍵字 '{keyword}' (上限 {max_results} 筆)...")
+    logger(f"啟動自動化搜尋：關鍵字 '{keyword}' (上限 {max_results} 筆)...")
     if fetch_full_text:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ 已啟用全文擷取模式 (執行時間將顯著增加)")
+        logger(f"⚠️ 已啟用深度擷取模式 (執行時間將顯著增加)")
 
     results = []
+    
+    # 確保 history 是一個 list (如果傳入 None 則初始化為空 list)
+    if history is None:
+        history = []
 
     try:
         async with async_playwright() as p:
@@ -61,19 +66,19 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
             page = await context.new_page()
 
             # 1. 導航至首頁
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] 導航至司法院裁判書系統首頁...")
+            logger("導航至司法院裁判書系統首頁...")
             await page.goto(target_url, timeout=60000)
 
             # 2. 填寫關鍵字
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] 填寫關鍵字: {keyword}")
+            logger(f"填寫關鍵字: {keyword}")
             await page.locator("#txtKW").fill(keyword)
 
             # 3. 送出查詢
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] 點擊送出查詢按鈕...")
+            logger("點擊送出查詢按鈕...")
             async with page.expect_navigation(timeout=60000):
                 await page.locator("#btnSimpleQry").click()
 
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] 等待搜尋結果框架 (iframe) 載入...")
+            logger("等待搜尋結果框架 (iframe) 載入...")
             
             # 4. 切換 iframe
             frame_element = await page.wait_for_selector("iframe[name='iframe-data']", timeout=30000)
@@ -82,14 +87,14 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
             if not frame:
                 return {"status": "error", "message": "找不到搜尋結果框架 (iframe)。"}
 
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] 成功進入結果框架，開始解析資料...")
+            logger("成功進入結果框架，開始解析資料...")
             
             # 5. 擷取資料列表
             try:
                 await frame.wait_for_selector("a[href*='data.aspx']", timeout=15000)
                 judgment_links = await frame.locator("a[href*='data.aspx']").all()
                 
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] 第一頁共找到 {len(judgment_links)} 筆判決，準備擷取前 {min(len(judgment_links), max_results)} 筆。")
+                logger(f"第一頁共找到 {len(judgment_links)} 筆判決，準備處理前 {min(len(judgment_links), max_results)} 筆。")
                 
                 limit = min(len(judgment_links), max_results)
                 
@@ -112,16 +117,29 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
                                 date_str = parts[2]
                                 reason_str = parts[3]
                     except Exception as parse_e:
-                        print(f"  (提取列表額外資訊失敗: {parse_e})")
+                        logger(f"  (提取列表額外資訊失敗: {parse_e})")
 
-                    print(f"  [{i+1}/{limit}] 處理中: {title}")
+                    logger(f"[{i+1}/{limit}] 處理中: {title}")
                     
-                    # 6. Deep Scraping: 擷取全文 (如果啟用)
-                    if fetch_full_text:
-                        full_content = await fetch_judgment_content(context, full_url)
+                    # --- 防重複檢查 (Deduplication) ---
+                    # 檢查此 URL 是否已存在於歷史紀錄中
+                    is_duplicate = False
+                    if history is not None and fetch_full_text:
+                        if full_url in history:
+                            is_duplicate = True
+                            logger(f"    ⏩ (已跳過) 發現本地紀錄，略過全文下載。")
+                            full_content = "[已存在本地紀錄，略過擷取]"
+
+                    # 6. Deep Scraping: 擷取全文 (如果啟用且非重複)
+                    if fetch_full_text and not is_duplicate:
+                        full_content = await fetch_judgment_content(context, full_url, logger=logger)
                         # 加入隨機延遲 (1~3秒)，避免被判定為惡意爬蟲
                         delay = random.uniform(1.0, 3.0)
                         await asyncio.sleep(delay)
+                        
+                        # 成功抓取全文後，將 URL 加入歷史紀錄
+                        if history is not None:
+                            history.append(full_url)
 
                     results.append({
                         "title": title,
@@ -132,8 +150,8 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
                     })
 
             except PlaywrightTimeoutError:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] 查無結果或頁面超時。")
-                return {"status": "success", "data": [], "message": "查無結果"}
+                logger("查無結果或頁面超時。")
+                return {"status": "success", "data": [], "message": "查無結果", "history": history}
 
             # --- 7. 資料匯出模組 ---
             output_data = {
@@ -148,7 +166,6 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
                 os.makedirs(output_dir, exist_ok=True)
                 timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
                 safe_keyword = "".join([c if c.isalnum() else "_" for c in keyword])
-                # 檔名加上標示，區分是否有全文
                 mode_str = "FULL" if fetch_full_text else "LIST"
                 base_filename = f"judgments_{safe_keyword}_{mode_str}_{timestamp_str}"
                 
@@ -156,48 +173,54 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
                     json_path = os.path.join(output_dir, f"{base_filename}.json")
                     with open(json_path, 'w', encoding='utf-8') as f:
                         json.dump(output_data, f, ensure_ascii=False, indent=2)
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ 成功儲存 JSON 檔案: {json_path}")
+                    logger(f"✅ 成功儲存 JSON 檔案: {json_path}")
                 
                 if output_format.lower() in ["csv", "both"]:
                     csv_path = os.path.join(output_dir, f"{base_filename}.csv")
                     with open(csv_path, 'w', encoding='utf-8-sig', newline='') as f:
                         writer = csv.writer(f)
-                        # 寫入標頭 (新增 Content)
                         writer.writerow(["Title", "Date", "Reason", "URL", "Content"])
                         for row in results:
-                            # 如果內容過長，在 CSV 中可能會難以閱讀，但為了資料完整性仍需匯出
                             writer.writerow([row['title'], row['date'], row['reason'], row['url'], row['content']])
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ 成功儲存 CSV 檔案: {csv_path}")
+                    logger(f"✅ 成功儲存 CSV 檔案: {csv_path}")
 
+            # 將更新後的 history 一併回傳給 GUI 去儲存
+            output_data['history'] = history
             return output_data
 
     except Exception as e:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ 自動化搜尋過程中發生致命錯誤: {e}")
-        return {"status": "error", "message": str(e)}
+        logger(f"❌ 自動化搜尋過程中發生致命錯誤: {e}")
+        return {"status": "error", "message": str(e), "history": history}
     finally:
         if 'browser' in locals():
             await browser.close()
 
 if __name__ == "__main__":
+    def console_logger(msg):
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
+
     parser = argparse.ArgumentParser(description="司法院裁判書系統自動擷取工具")
     parser.add_argument("keyword", type=str, help="要搜尋的關鍵字 (例如：'詐欺 虛擬貨幣')")
     parser.add_argument("-m", "--max_results", type=int, default=10, help="最大擷取筆數 (預設: 10)")
     parser.add_argument("-f", "--format", type=str, choices=["json", "csv", "both"], default="json", help="輸出檔案格式 (json, csv, both. 預設: json)")
     parser.add_argument("-o", "--output_dir", type=str, default="results", help="儲存結果的目錄 (預設: results)")
-    parser.add_argument("--full", action="store_true", help="啟用全文擷取模式 (警告：執行時間會顯著增加)") # 新增 --full 參數
+    parser.add_argument("--full", action="store_true", help="啟用全文擷取模式 (警告：執行時間會顯著增加)") 
 
     args = parser.parse_args()
 
-    print(f"--- 啟動情報擷取工具 (CLI 模式) ---")
+    console_logger("--- 啟動情報擷取工具 (CLI 模式) ---")
+    
     output = asyncio.run(search_and_extract_judgments(
         keyword=args.keyword,
         max_results=args.max_results,
         output_format=args.format,
         output_dir=args.output_dir,
-        fetch_full_text=args.full # 傳遞 full 參數
+        fetch_full_text=args.full,
+        logger=console_logger,
+        history=None 
     ))
     
     if output.get("status") == "success":
-         print(f"--- 擷取完成。共獲取 {output.get('count', 0)} 筆資料 ---")
+         console_logger(f"--- 擷取完成。共獲取 {output.get('count', 0)} 筆資料 ---")
     else:
-         print(f"--- 擷取失敗 ---")
+         console_logger(f"--- 擷取失敗 ---")
