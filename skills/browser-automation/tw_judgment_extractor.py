@@ -16,12 +16,9 @@ async def fetch_judgment_content(context, url, logger=print):
     logger(f"    -> 正在擷取全文: {url}")
     content_text = ""
     try:
-        # 開啟一個新的分頁來抓全文，避免干擾列表頁
         page = await context.new_page()
         await page.goto(url, timeout=30000)
         
-        # 司法院全文頁面的主文通常包在具有 class="htmlformat" 的 div 中
-        # 如果找不到，就抓取整個 body 的 innerText 作為備案
         try:
             content_element = await page.wait_for_selector("div.htmlformat", timeout=10000)
             content_text = await content_element.inner_text()
@@ -29,7 +26,6 @@ async def fetch_judgment_content(context, url, logger=print):
             logger("      (找不到 .htmlformat 標籤，嘗試抓取整個頁面內文...)")
             content_text = await page.inner_text("body")
             
-        # 簡單清理：移除多餘的空白列
         content_text = "\n".join([line for line in content_text.splitlines() if line.strip()])
         
     except Exception as e:
@@ -44,16 +40,16 @@ async def fetch_judgment_content(context, url, logger=print):
 async def search_and_extract_judgments(keyword, max_results=10, output_format="json", output_dir="results", fetch_full_text=False, logger=print, history=None):
     """
     使用 Playwright 在司法院裁判書系統搜尋並擷取結構化結果。
-    加入 logger 參數以支援 GUI 回報進度，加入 history 參數以支援防重複機制。
+    加入動態遞補機制：若遇到已下載的案件會自動跳過，直到抓滿指定數量的新案件。
     """
     target_url = "https://judgment.judicial.gov.tw/FJUD/default.aspx"
-    logger(f"啟動自動化搜尋：關鍵字 '{keyword}' (上限 {max_results} 筆)...")
+    logger(f"啟動自動化搜尋：關鍵字 '{keyword}' (目標獲取 {max_results} 筆新資料)...")
     if fetch_full_text:
         logger(f"⚠️ 已啟用深度擷取模式 (執行時間將顯著增加)")
 
     results = []
+    valid_count = 0 # 記錄真正成功處理(或下載)的新資料筆數
     
-    # 確保 history 是一個 list (如果傳入 None 則初始化為空 list)
     if history is None:
         history = []
 
@@ -65,22 +61,18 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
             )
             page = await context.new_page()
 
-            # 1. 導航至首頁
             logger("導航至司法院裁判書系統首頁...")
             await page.goto(target_url, timeout=60000)
 
-            # 2. 填寫關鍵字
             logger(f"填寫關鍵字: {keyword}")
             await page.locator("#txtKW").fill(keyword)
 
-            # 3. 送出查詢
             logger("點擊送出查詢按鈕...")
             async with page.expect_navigation(timeout=60000):
                 await page.locator("#btnSimpleQry").click()
 
             logger("等待搜尋結果框架 (iframe) 載入...")
             
-            # 4. 切換 iframe
             frame_element = await page.wait_for_selector("iframe[name='iframe-data']", timeout=30000)
             frame = await frame_element.content_frame()
             
@@ -89,98 +81,125 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
 
             logger("成功進入結果框架，開始解析資料...")
             
-            # 5. 擷取資料列表
-            try:
-                await frame.wait_for_selector("a[href*='data.aspx']", timeout=15000)
-                judgment_links = await frame.locator("a[href*='data.aspx']").all()
-                
-                logger(f"第一頁共找到 {len(judgment_links)} 筆判決，準備處理前 {min(len(judgment_links), max_results)} 筆。")
-                
-                limit = min(len(judgment_links), max_results)
-                
-                for i in range(limit):
-                    link_element = judgment_links[i]
-                    title = (await link_element.inner_text()).strip()
-                    href = await link_element.get_attribute("href")
-                    full_url = f"https://judgment.judicial.gov.tw/FJUD/{href}"
+            current_page_num = 1
+            
+            # 使用 while 迴圈處理跨頁抓取，直到 valid_count 達到目標
+            while valid_count < max_results:
+                try:
+                    await frame.wait_for_selector("a[href*='data.aspx']", timeout=15000)
+                    judgment_links = await frame.locator("a[href*='data.aspx']").all()
                     
-                    date_str = ""
-                    reason_str = ""
-                    full_content = ""
+                    logger(f"--- 正在處理第 {current_page_num} 頁 (本頁有 {len(judgment_links)} 筆) ---")
                     
-                    try:
-                        parent_row = link_element.locator("xpath=ancestor::tr").first
-                        if parent_row:
-                            row_text = await parent_row.inner_text()
-                            parts = [p.strip() for p in row_text.split('\t') if p.strip()]
-                            if len(parts) >= 4:
-                                date_str = parts[2]
-                                reason_str = parts[3]
-                    except Exception as parse_e:
-                        logger(f"  (提取列表額外資訊失敗: {parse_e})")
-
-                    logger(f"[{i+1}/{limit}] 處理中: {title}")
-                    
-                    # --- 防重複檢查 (Deduplication) ---
-                    # 檢查此 URL 是否已存在於歷史紀錄中
-                    is_duplicate = False
-                    if history is not None and fetch_full_text:
-                        if full_url in history:
-                            is_duplicate = True
-                            logger(f"    ⏩ (已跳過) 發現本地紀錄，略過全文下載。")
-                            full_content = "[已存在本地紀錄，略過擷取]"
-
-                    # 6. Deep Scraping: 擷取全文 (如果啟用且非重複)
-                    local_file_path = ""
-                    if fetch_full_text and not is_duplicate:
-                        full_content = await fetch_judgment_content(context, full_url, logger=logger)
-                        
-                        # 儲存為獨立的 TXT 檔案
-                        if full_content and not full_content.startswith("[Error"):
-                            safe_title = "".join([c if c.isalnum() or c in " _-" else "_" for c in title])
-                            txt_filename = f"{safe_title}.txt"
-                            txt_filepath = os.path.join(output_dir, txt_filename)
+                    for link_element in judgment_links:
+                        if valid_count >= max_results:
+                            break # 如果已經達到目標筆數，跳出迴圈
                             
-                            try:
-                                with open(txt_filepath, 'w', encoding='utf-8') as f:
-                                    f.write(f"標題: {title}\n")
-                                    f.write(f"日期: {date_str}\n")
-                                    f.write(f"案由: {reason_str}\n")
-                                    f.write(f"網址: {full_url}\n")
-                                    f.write("-" * 40 + "\n\n")
-                                    f.write(full_content)
-                                local_file_path = txt_filename
-                                logger(f"    📄 判決書已存為: {txt_filename}")
-                            except Exception as save_e:
-                                logger(f"    ❌ 儲存 TXT 失敗: {save_e}")
+                        title = (await link_element.inner_text()).strip()
+                        href = await link_element.get_attribute("href")
+                        full_url = f"https://judgment.judicial.gov.tw/FJUD/{href}"
                         
-                        # 加入隨機延遲 (1~3秒)，避免被判定為惡意爬蟲
-                        delay = random.uniform(1.0, 3.0)
-                        await asyncio.sleep(delay)
+                        date_str = ""
+                        reason_str = ""
+                        full_content = ""
+                        local_file_path = ""
                         
-                        # 成功抓取全文後，將 URL 加入歷史紀錄
-                        if history is not None:
-                            history.append(full_url)
+                        try:
+                            parent_row = link_element.locator("xpath=ancestor::tr").first
+                            if parent_row:
+                                row_text = await parent_row.inner_text()
+                                parts = [p.strip() for p in row_text.split('\t') if p.strip()]
+                                if len(parts) >= 4:
+                                    date_str = parts[2]
+                                    reason_str = parts[3]
+                        except Exception as parse_e:
+                            pass # 忽略單筆額外資訊解析錯誤
 
-                    results.append({
-                        "title": title,
-                        "date": date_str,
-                        "reason": reason_str,
-                        "url": full_url,
-                        "local_file": local_file_path if fetch_full_text and not is_duplicate else "[未啟用全文或已存在本地]",
-                        "content": full_content if fetch_full_text else "[未啟用全文擷取]"
-                    })
+                        # --- 防重複檢查 (Deduplication) ---
+                        is_duplicate = False
+                        if history is not None and fetch_full_text:
+                            if full_url in history:
+                                is_duplicate = True
+                                logger(f"  ⏩ [跳過] {title} (發現本地紀錄)")
+                                # 如果是重複的，我們不把它算進 valid_count，也不加入 results 中
+                                continue 
+                        
+                        # 到這裡表示這是一筆我們需要處理的「新資料」
+                        logger(f"  ⬇️ [下載] 處理中: {title} ({valid_count + 1}/{max_results})")
+                        
+                        # 6. Deep Scraping: 擷取全文
+                        if fetch_full_text:
+                            full_content = await fetch_judgment_content(context, full_url, logger=logger)
+                            
+                            if full_content and not full_content.startswith("[Error"):
+                                safe_title = "".join([c if c.isalnum() or c in " _-" else "_" for c in title])
+                                txt_filename = f"{safe_title}.txt"
+                                txt_filepath = os.path.join(output_dir, txt_filename)
+                                
+                                try:
+                                    # 確保 output_dir 存在
+                                    os.makedirs(output_dir, exist_ok=True)
+                                    with open(txt_filepath, 'w', encoding='utf-8') as f:
+                                        f.write(f"標題: {title}\n")
+                                        f.write(f"日期: {date_str}\n")
+                                        f.write(f"案由: {reason_str}\n")
+                                        f.write(f"網址: {full_url}\n")
+                                        f.write("-" * 40 + "\n\n")
+                                        f.write(full_content)
+                                    local_file_path = txt_filename
+                                    logger(f"    📄 判決書已存為: {txt_filename}")
+                                except Exception as save_e:
+                                    logger(f"    ❌ 儲存 TXT 失敗: {save_e}")
+                            
+                            delay = random.uniform(1.0, 3.0)
+                            await asyncio.sleep(delay)
+                            
+                            if history is not None:
+                                history.append(full_url)
 
-            except PlaywrightTimeoutError:
-                logger("查無結果或頁面超時。")
-                return {"status": "success", "data": [], "message": "查無結果", "history": history}
+                        results.append({
+                            "title": title,
+                            "date": date_str,
+                            "reason": reason_str,
+                            "url": full_url,
+                            "local_file": local_file_path if fetch_full_text else "[未啟用全文擷取]",
+                            "content": full_content if fetch_full_text else "[未啟用全文擷取]"
+                        })
+                        
+                        valid_count += 1 # 成功處理一筆新資料，計數器加 1
+
+                    # 如果當前頁面的資料都處理完了，但還沒達到目標筆數，嘗試翻到下一頁
+                    if valid_count < max_results:
+                        # 尋找「下一頁」按鈕 (通常是個 'a' 標籤且文字為 '下一頁'，或是特定的 class)
+                        try:
+                            # 司法院的翻頁按鈕 id 通常是 hlNext
+                            next_page_btn = frame.locator("#hlNext")
+                            if await next_page_btn.count() > 0 and await next_page_btn.is_visible():
+                                logger(f"--- 準備翻頁，前往第 {current_page_num + 1} 頁 ---")
+                                await next_page_btn.click()
+                                # 等待新頁面載入 (這裡可能需要依賴網路請求穩定)
+                                await page.wait_for_load_state('networkidle')
+                                # 重新抓取 frame
+                                frame_element = await page.wait_for_selector("iframe[name='iframe-data']", timeout=30000)
+                                frame = await frame_element.content_frame()
+                                current_page_num += 1
+                            else:
+                                logger("已到達最後一頁，無更多結果可擷取。")
+                                break # 沒有下一頁了，跳出大迴圈
+                        except Exception as e:
+                            logger(f"尋找或點擊下一頁時發生錯誤: {e}")
+                            break # 翻頁失敗，跳出大迴圈
+                            
+                except PlaywrightTimeoutError:
+                    logger("查無結果或頁面超時。")
+                    break
 
             # --- 7. 資料匯出模組 ---
             output_data = {
                 "status": "success",
                 "keyword": keyword,
                 "timestamp": datetime.now().isoformat(),
-                "count": len(results),
+                "count": len(results), # 這裡的 results 只包含新擷取的資料
                 "data": results
             }
 
@@ -206,7 +225,6 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
                             writer.writerow([row['title'], row['date'], row['reason'], row['url'], row.get('local_file', '')])
                     logger(f"✅ 成功儲存 CSV 檔案 (精簡目錄版): {csv_path}")
 
-            # 將更新後的 history 一併回傳給 GUI 去儲存
             output_data['history'] = history
             return output_data
 
