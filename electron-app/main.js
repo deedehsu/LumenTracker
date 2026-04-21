@@ -138,7 +138,7 @@ function createWindow() {
     },
   });
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
-  // mainWindow.webContents.openDevTools(); // 關閉強制開啟，解決 Windows 焦點問題
+  mainWindow.webContents.openDevTools(); // 強制開啟開發者工具以排查白畫面問題
 }
 
 app.whenReady().then(async () => {
