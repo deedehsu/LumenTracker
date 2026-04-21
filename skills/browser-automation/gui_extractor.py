@@ -58,15 +58,15 @@ class JudgmentExtractorGUI:
         self.max_results_spin = ttk.Spinbox(input_frame, from_=1, to=100, textvariable=self.max_results_var, width=10)
         self.max_results_spin.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
 
-        # 輸出格式
-        ttk.Label(input_frame, text="輸出格式:").grid(row=2, column=0, sticky=tk.W, pady=5)
-        self.format_var = tk.StringVar(value="both")
-        format_combo = ttk.Combobox(input_frame, textvariable=self.format_var, values=["json", "csv", "both"], width=10, state="readonly")
-        format_combo.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
+        # 輸出格式 (已移除，固定為 both)
+        # ttk.Label(input_frame, text="輸出格式:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        # self.format_var = tk.StringVar(value="both")
+        # format_combo = ttk.Combobox(input_frame, textvariable=self.format_var, values=["json", "csv", "both"], width=10, state="readonly")
+        # format_combo.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
 
         # 選項 (Checkboxes)
         options_frame = ttk.Frame(input_frame)
-        options_frame.grid(row=3, column=0, columnspan=2, sticky=tk.W, pady=(10, 0))
+        options_frame.grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=(10, 0))
 
         self.full_text_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(options_frame, text="深度擷取：自動抓取判決書全文 (執行較慢)", variable=self.full_text_var).pack(anchor=tk.W)
@@ -144,7 +144,7 @@ class JudgmentExtractorGUI:
             return
 
         max_results = self.max_results_var.get()
-        out_format = self.format_var.get()
+        out_format = "both" # 固定輸出 JSON 和 CSV (精簡版)
         fetch_full = self.full_text_var.get()
         skip_duplicate = self.skip_duplicate_var.get()
 
