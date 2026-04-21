@@ -210,20 +210,37 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
                 mode_str = "FULL" if fetch_full_text else "LIST"
                 base_filename = f"judgments_{safe_keyword}_{mode_str}_{timestamp_str}"
                 
+                # 依然保留每次獨立的 JSON 檔案作為完整資料備份
                 if output_format.lower() in ["json", "both"]:
                     json_path = os.path.join(output_dir, f"{base_filename}.json")
                     with open(json_path, 'w', encoding='utf-8') as f:
                         json.dump(output_data, f, ensure_ascii=False, indent=2)
-                    logger(f"✅ 成功儲存 JSON 檔案: {json_path}")
+                    logger(f"✅ 成功儲存 JSON 備份檔: {json_path}")
                 
+                # 修改 CSV 輸出為單一總表附加模式
                 if output_format.lower() in ["csv", "both"]:
-                    csv_path = os.path.join(output_dir, f"{base_filename}.csv")
-                    with open(csv_path, 'w', encoding='utf-8-sig', newline='') as f:
+                    csv_master_path = os.path.join(output_dir, "Lumen_Judgment_Master_Index.csv")
+                    file_exists = os.path.isfile(csv_master_path)
+                    
+                    # 使用 'a' (append) 模式開啟，如果檔案不存在會自動建立
+                    with open(csv_master_path, 'a', encoding='utf-8-sig', newline='') as f:
                         writer = csv.writer(f)
-                        writer.writerow(["Title", "Date", "Reason", "URL", "Local_File"])
+                        # 如果檔案是新建的，才寫入標題列
+                        if not file_exists:
+                            writer.writerow(["Title", "Date", "Reason", "URL", "Local_File", "Search_Keyword", "Timestamp"])
+                        
+                        # 寫入資料列，並加入搜尋關鍵字和時間戳記以便追溯
                         for row in results:
-                            writer.writerow([row['title'], row['date'], row['reason'], row['url'], row.get('local_file', '')])
-                    logger(f"✅ 成功儲存 CSV 檔案 (精簡目錄版): {csv_path}")
+                            writer.writerow([
+                                row['title'], 
+                                row['date'], 
+                                row['reason'], 
+                                row['url'], 
+                                row.get('local_file', ''),
+                                keyword,
+                                timestamp_str
+                            ])
+                    logger(f"✅ 成功將 {len(results)} 筆目錄資料附加至總表: {csv_master_path}")
 
             output_data['history'] = history
             return output_data
