@@ -14,6 +14,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            overflow: hidden; /* 防止出現卷軸 */
         }
         .container {
             background-color: #ffffff;
@@ -23,219 +24,74 @@
             max-width: 700px;
             width: 90%;
             text-align: center;
+            /* 讓 container 垂直水平置中 */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
-        h1 {
-            color: #4CAF50;
-            margin-bottom: 20px;
-            font-size: 2.2em;
-        }
-        h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-        }
-        p {
-            font-size: 1.1em;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-        .disclaimer {
-            color: #888;
-            font-size: 0.9em;
-            margin-top: 30px;
-            border-top: 1px solid #eee;
-            padding-top: 15px;
-        }
-        .button-group {
-            margin-top: 30px;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-        .button {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .button.secondary {
-            background-color: #6c757d;
-        }
-        .button:hover {
-            background-color: #0056b3;
-        }
-        .button.secondary:hover {
-            background-color: #545b62;
-        }
-        .input-group {
-            margin-top: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-        }
-        input[type="password"], input[type="text"] {
-            width: 80%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 1em;
-            box-sizing: border-box;
-        }
-        .hidden {
-            display: none;
-        }
-        .checkmark {
-            color: #4CAF50;
-            font-size: 4em;
-            margin-bottom: 20px;
-        }
-        .lock-icon {
-            color: #007bff;
-            font-size: 4em;
-            margin-bottom: 20px;
-        }
-        .error-message {
-            color: #dc3545;
-            font-size: 0.9em;
-            margin-top: -10px;
-            margin-bottom: 10px;
-        }
-        .success-message {
-            color: #28a745;
-            font-size: 0.9em;
-            margin-top: -10px;
-            margin-bottom: 10px;
-        }
-        .api-section {
-            border: 1px solid #eee;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            background-color: #fafafa;
-        }
-        .api-section h3 {
-            margin-top: 0;
-            font-size: 1.2em;
-            color: #555;
-        }
-        .test-result {
-            margin-top: 5px;
-            font-weight: bold;
-        }
+        h1 { color: #4CAF50; margin-bottom: 20px; font-size: 2.2em; }
+        h2 { color: #333; margin-bottom: 20px; font-size: 1.8em; }
+        p { font-size: 1.1em; line-height: 1.6; margin-bottom: 15px; }
+        .disclaimer { color: #888; font-size: 0.9em; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
+        .button-group { margin-top: 30px; display: flex; justify-content: center; gap: 15px; }
+        .button { background-color: #007bff; color: white; padding: 12px 25px; border: none; border-radius: 5px; font-size: 1.1em; cursor: pointer; transition: background-color 0.3s ease; }
+        .button.secondary { background-color: #6c757d; }
+        .button:hover { background-color: #0056b3; }
+        .button.secondary:hover { background-color: #545b62; }
+        .button:disabled { background-color: #a0c4ff; cursor: not-allowed; }
+        .input-group { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+        input[type="password"], input[type="text"] { width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box; }
+        .hidden { display: none !important; }
+        .checkmark { color: #4CAF50; font-size: 4em; margin-bottom: 20px; }
+        .lock-icon { color: #007bff; font-size: 4em; margin-bottom: 20px; }
+        .error-message { color: #dc3545; font-size: 0.9em; margin-top: -10px; margin-bottom: 10px; }
+        .success-message { color: #28a745; font-size: 0.9em; margin-top: -10px; margin-bottom: 10px; }
+        .api-section { border: 1px solid #eee; padding: 20px; border-radius: 8px; margin-bottom: 20px; background-color: #fafafa; }
+        .api-section h3 { margin-top: 0; font-size: 1.2em; color: #555; }
+        .test-result { margin-top: 5px; font-weight: bold; }
+
         /* Dashboard styles */
         .dashboard-layout {
             display: flex;
             width: 100vw;
             height: 100vh;
             background-color: #f0f2f5;
-        }
-        .sidebar {
-            width: 250px;
-            background-color: #2c3e50;
-            color: white;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .sidebar h2 {
-            color: #ecf0f1;
-            border-bottom: 1px solid #34495e;
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
-        .sidebar li {
-            padding: 10px 0;
-            cursor: pointer;
-            border-bottom: 1px solid #34495e;
-        }
-        .sidebar li:hover {
-            color: #3498db;
-        }
-        .main-content {
-            flex-grow: 1;
-            padding: 30px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-        }
-        .search-bar {
-            display: flex;
-            margin-bottom: 30px;
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .search-bar input {
-            flex-grow: 1;
-            padding: 12px;
-            font-size: 1.1em;
-            border: 1px solid #ced4da;
-            border-radius: 4px 0 0 4px;
-            outline: none;
-        }
-        .search-bar button {
-            padding: 12px 25px;
-            font-size: 1.1em;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 0 4px 4px 0;
-            cursor: pointer;
-        }
-        .search-bar button:hover {
-            background-color: #218838;
-        }
-        .workspace {
-            flex-grow: 1;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            padding: 20px;
-            display: flex;
-            flex-direction: column; /* 改為直向排列 */
-            /* align-items: center; 移除置中，讓表格填滿 */
-            /* color: #aaa; */
-            /* font-size: 1.2em; */
-            overflow-y: auto; /* 允許內容捲動 */
-        }
-        
-        /* 交易列表表格樣式 */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9em;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-            word-break: break-all; /* 避免長 Hash 撐破表格 */
-        }
-        th {
-            background-color: #f2f2f2;
-            color: #333;
-            position: sticky; /* 讓表頭固定 */
+            position: absolute;
             top: 0;
+            left: 0;
         }
-        .hash-col { max-width: 150px; }
-        .addr-col { max-width: 150px; }
-        .val-col { text-align: right; }
+        .sidebar { width: 250px; background-color: #2c3e50; color: white; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column;}
+        .sidebar h2 { color: #ecf0f1; border-bottom: 1px solid #34495e; padding-bottom: 10px; margin-top: 0; }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar li { padding: 15px 10px; cursor: pointer; border-bottom: 1px solid #34495e; transition: background-color 0.2s;}
+        .sidebar li:hover { background-color: #34495e; }
+        .sidebar li.active { color: #4CAF50; font-weight: bold; border-left: 4px solid #4CAF50; padding-left: 6px;}
+
+        .main-content { flex-grow: 1; padding: 30px; box-sizing: border-box; display: flex; flex-direction: column; overflow-y: auto; }
+        .search-bar { display: flex; margin-bottom: 30px; background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .search-bar input { flex-grow: 1; padding: 12px; font-size: 1.1em; border: 1px solid #ced4da; border-radius: 4px 0 0 4px; outline: none; }
+        .search-bar button { padding: 12px 25px; font-size: 1.1em; background-color: #28a745; color: white; border: none; border-radius: 0 4px 4px 0; cursor: pointer; transition: background-color 0.2s;}
+        .search-bar button:hover { background-color: #218838; }
+        .search-bar button:disabled { background-color: #8fdfa1; cursor: not-allowed; }
+
+        .workspace { flex-grow: 1; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
+        
+        /* Table Styles */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: left; }
+        th { background-color: #f8f9fa; color: #333; position: sticky; top: 0; font-weight: bold; border-bottom: 2px solid #dee2e6;}
+        tr:nth-child(even) { background-color: #fcfcfc; }
+        tr:hover { background-color: #f1f1f1; }
+        .hash-col { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; color: #0056b3;}
+        .addr-col { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
+        .val-col { text-align: right; font-family: monospace; font-weight: bold;}
     </style>
 </head>
 <body>
+
     <!-- 畫面 1: 歡迎與資安宣告 -->
-    <div id="screen1" class="container">
+    <div id="screen1" class="container hidden">
         <h1>歡迎使用 LumenTracker</h1>
         <p>為了保護您的偵查隱私與案件機密，本軟體採**完全單機運行**。</p>
         <p>我們不會將您的任何查詢紀錄上傳至雲端伺服器。</p>
@@ -243,7 +99,7 @@
         <div class="button-group">
             <button class="button" id="nextToScreen2Button">開始設定</button>
         </div>
-        <p class="disclaimer">請詳閱我們的隱私政策與資安聲明</p>
+        <p class="disclaimer">請詳閱我們的<a href="#" onclick="return false;">隱私政策與資安聲明</a></p>
     </div>
 
     <!-- 畫面 2: 什麼是區塊鏈 API Key？ -->
@@ -295,9 +151,9 @@
     <div id="screen4" class="container hidden">
         <h2>設定主密碼</h2>
         <p>為了確保您的 API Key 和其他敏感資料的安全，我們建議設定一個**主密碼**。</p>
-        <p>此密碼將用於使用軍規加密 (AES-256) 保護您的 API Key，並在每次啟動軟體時要求輸入。</p>
+        <p>此密碼將用於使用高等級加密保護您的 API Key，並在每次啟動軟體時要求輸入。</p>
         <div class="input-group">
-            <input type="password" id="masterPassword" placeholder="請輸入主密碼" autocomplete="new-password" autofocus>
+            <input type="password" id="masterPassword" placeholder="請輸入主密碼" autocomplete="new-password">
             <input type="password" id="confirmMasterPassword" placeholder="請再次輸入主密碼" autocomplete="new-password">
             <p class="error-message hidden" id="passwordError">密碼不一致或未填寫！</p>
             <p class="error-message hidden" id="saveError">API Key 儲存失敗，請重試。</p>
@@ -308,14 +164,14 @@
         </div>
     </div>
 
-    <!-- 畫面 5: 解鎖畫面 (Unlock Screen) -->
+    <!-- 解鎖畫面 (Unlock Screen) -->
     <div id="unlockScreen" class="container hidden">
         <div class="lock-icon">🔒</div>
         <h2>系統已鎖定</h2>
         <p>您的 API Keys 已安全地存放在本地。</p>
         <p>請輸入您的主密碼以解鎖 LumenTracker 並開始調查。</p>
         <div class="input-group">
-            <input type="password" id="unlockPassword" placeholder="請輸入主密碼" autocomplete="current-password" autofocus>
+            <input type="password" id="unlockPassword" placeholder="請輸入主密碼" autocomplete="current-password">
             <p class="error-message hidden" id="unlockError">密碼錯誤或資料損壞！請重試。</p>
         </div>
         <div class="button-group">
@@ -329,7 +185,7 @@
         <div class="sidebar">
             <h2>LumenTracker</h2>
             <ul>
-                <li style="color: #4CAF50; font-weight: bold;">🔍 新的調查</li>
+                <li class="active">🔍 新的調查</li>
                 <li>📁 歷史案件 (開發中)</li>
                 <li>⚙️ 系統設定 (開發中)</li>
             </ul>
@@ -343,56 +199,66 @@
             </div>
             <!-- 工作區 -->
             <div class="workspace">
-                <div id="initialWorkspaceMessage" style="text-align: center; color: #aaa; font-size: 1.2em;">
+                <div id="initialWorkspaceMessage" style="text-align: center; color: #aaa; margin-top: 50px;">
                     <p style="font-size: 1.5em; margin-bottom: 10px;">[分析工作區準備就緒]</p>
                     <p>API Keys 已成功載入記憶體。</p>
-                    <p>請在上方的搜尋列輸入目標，開始建立幣流關聯圖。</p>
+                    <p>請在上方的搜尋列輸入目標，開始查詢交易紀錄。</p>
                 </div>
                 
                 <!-- 交易結果表格 (預設隱藏) -->
                 <div id="transactionResults" class="hidden" style="width: 100%;">
-                    <h3 style="color: #333; margin-top: 0;">最新交易紀錄 (Etherscan)</h3>
-                    <p id="txCountMessage" style="color: #666; font-size: 0.9em; margin-bottom: 10px;"></p>
-                    <table id="txTable">
-                        <thead>
-                            <tr>
-                                <th style="width: 15%;">時間 (Time)</th>
-                                <th class="hash-col">交易 Hash (TxHash)</th>
-                                <th class="addr-col">發送方 (From)</th>
-                                <th class="addr-col">接收方 (To)</th>
-                                <th class="val-col">金額 (Value in Wei)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="txTableBody">
-                            <!-- 交易列將會動態插入這裡 -->
-                        </tbody>
-                    </table>
+                    <h3 style="color: #333; margin-top: 0; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">最新交易紀錄 (Etherscan)</h3>
+                    <p id="txCountMessage" style="color: #666; font-size: 1em; margin-bottom: 15px; font-weight: bold;"></p>
+                    <div style="overflow-x: auto;">
+                        <table id="txTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">時間 (Time)</th>
+                                    <th class="hash-col">交易 Hash (TxHash)</th>
+                                    <th class="addr-col">發送方 (From)</th>
+                                    <th class="addr-col">接收方 (To)</th>
+                                    <th class="val-col">金額 (Value in ETH)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="txTableBody">
+                                <!-- 交易列將會動態插入這裡 -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let temporaryApiKeys = {}; 
-        let currentLumenApiKeys = null; // 用於儲存解鎖後的 API Keys 供主系統使用
+        // 安全地獲取 Electron API
+        const electronAPI = window.electronAPI;
 
+        let temporaryApiKeys = {}; 
+        let currentLumenApiKeys = null; 
+
+        // 全域錯誤捕獲
         window.onerror = function(message, source, lineno, colno, error) {
             console.error(`Frontend Error: ${message} at ${source}:${lineno}:${colno}`, error);
             return true; 
         };
 
-        // 隱藏所有畫面的輔助函數
+        // 隱藏所有畫面的輔助函數，確保畫面不重疊
         function hideAllScreens() {
-            ['screen1', 'screen2', 'screen3', 'screen4', 'unlockScreen', 'mainDashboard'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
+            const screens = ['screen1', 'screen2', 'screen3', 'screen4', 'unlockScreen', 'mainDashboard'];
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
             });
-            // 重置一些通用狀態
-            document.getElementById('passwordError').classList.add('hidden');
-            document.getElementById('saveError').classList.add('hidden');
-            document.getElementById('unlockError').classList.add('hidden');
+            // 隱藏錯誤訊息
+            document.getElementById('passwordError')?.classList.add('hidden');
+            document.getElementById('saveError')?.classList.add('hidden');
+            document.getElementById('unlockError')?.classList.add('hidden');
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
+            console.log('DOMContentLoaded fired.');
+            
             const screen1 = document.getElementById('screen1');
             const screen2 = document.getElementById('screen2');
             const screen3 = document.getElementById('screen3');
@@ -400,7 +266,6 @@
             const unlockScreen = document.getElementById('unlockScreen');
             const mainDashboard = document.getElementById('mainDashboard');
 
-            // 按鈕
             const nextToScreen2Button = document.getElementById('nextToScreen2Button');
             const backToScreen1Button = document.getElementById('backToScreen1Button');
             const nextToScreen3Button = document.getElementById('nextToScreen3Button');
@@ -409,32 +274,34 @@
             const backToScreen3Button = document.getElementById('backToScreen3Button');
             const submitSetupButton = document.getElementById('submitSetupButton');
             const unlockButton = document.getElementById('unlockButton');
-            const startSearchBtn = document.getElementById('startSearchBtn');
+            
             const testEtherscanButton = document.getElementById('testEtherscanButton');
             const testTronscanButton = document.getElementById('testTronscanButton');
+            const startSearchBtn = document.getElementById('startSearchBtn');
 
-            // 輸入框與錯誤訊息
             const etherscanKeyInput = document.getElementById('etherscanKeyInput');
             const tronscanKeyInput = document.getElementById('tronscanKeyInput');
             const etherscanResult = document.getElementById('etherscanResult');
             const tronscanResult = document.getElementById('tronscanResult');
+            
             const masterPasswordField = document.getElementById('masterPassword');
             const confirmMasterPasswordField = document.getElementById('confirmMasterPassword');
             const unlockPasswordField = document.getElementById('unlockPassword');
             const addressSearchInput = document.getElementById('addressSearchInput');
-            const initialWorkspaceMessage = document.getElementById('initialWorkspaceMessage');
-            const transactionResults = document.getElementById('transactionResults');
-            const txCountMessage = document.getElementById('txCountMessage');
-            const txTableBody = document.getElementById('txTableBody');
             
             const passwordError = document.getElementById('passwordError');
             const saveError = document.getElementById('saveError');
             const unlockError = document.getElementById('unlockError');
 
+            const initialWorkspaceMessage = document.getElementById('initialWorkspaceMessage');
+            const transactionResults = document.getElementById('transactionResults');
+            const txCountMessage = document.getElementById('txCountMessage');
+            const txTableBody = document.getElementById('txTableBody');
+
             // --- 啟動路由邏輯 ---
             try {
-                const isConfigured = await window.electronAPI.isApiKeysConfigured();
-                hideAllScreens();
+                hideAllScreens(); // 確保初始狀態乾淨
+                const isConfigured = await electronAPI.isApiKeysConfigured();
                 if (isConfigured) {
                     console.log('API Keys configured. Showing Unlock Screen.');
                     unlockScreen.classList.remove('hidden'); 
@@ -446,7 +313,7 @@
             } catch(e) {
                 console.error("Error checking config status:", e);
                 hideAllScreens();
-                screen1.classList.remove('hidden'); // Fallback
+                screen1.classList.remove('hidden'); 
             }
 
             // --- Onboarding 畫面切換邏輯 ---
@@ -480,7 +347,7 @@
                 etherscanResult.textContent = '測試中...';
                 etherscanResult.className = 'test-result';
                 try {
-                    const result = await window.electronAPI.testApiKey({ provider: 'etherscan', apiKey });
+                    const result = await electronAPI.testApiKey({ provider: 'etherscan', apiKey });
                     etherscanResult.textContent = result.message;
                     etherscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
                 } catch(e) {
@@ -494,7 +361,7 @@
                 tronscanResult.textContent = '測試中...';
                 tronscanResult.className = 'test-result';
                 try {
-                    const result = await window.electronAPI.testApiKey({ provider: 'tronscan', apiKey });
+                    const result = await electronAPI.testApiKey({ provider: 'tronscan', apiKey });
                     tronscanResult.textContent = result.message;
                     tronscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
                 } catch(e) {
@@ -519,7 +386,7 @@
                     submitSetupButton.disabled = true;
                     submitSetupButton.textContent = "加密中...";
                     try {
-                        const result = await window.electronAPI.saveApiKeys({
+                        const result = await electronAPI.saveApiKeys({
                             apiKeys: temporaryApiKeys,
                             masterPassword: masterPass
                         });
@@ -529,8 +396,7 @@
                             masterPasswordField.value = '';
                             confirmMasterPasswordField.value = '';
                             
-                            // 設定完成後，直接跳轉到「解鎖畫面」讓使用者輸入剛才設定的密碼來進入系統
-                            // 這是最好的驗證機制
+                            // 設定完成後，直接跳轉到「解鎖畫面」
                             hideAllScreens();
                             unlockScreen.classList.remove('hidden');
                             setTimeout(() => unlockPasswordField.focus(), 100);
@@ -566,12 +432,12 @@
                 unlockButton.disabled = true;
 
                 try {
-                    const result = await window.electronAPI.getApiKeys(password);
+                    const result = await electronAPI.getApiKeys(password);
                     if (result.success) {
                         console.log("解鎖成功！API Keys 已載入記憶體。");
-                        currentLumenApiKeys = result.apiKeys; // 將解密後的 Keys 存在前端變數
+                        currentLumenApiKeys = result.apiKeys; 
                         
-                        unlockPasswordField.value = ""; // 清除密碼框
+                        unlockPasswordField.value = ""; 
                         hideAllScreens();
                         mainDashboard.classList.remove("hidden"); // 正式進入主介面！
                         setTimeout(() => addressSearchInput.focus(), 100);
@@ -597,8 +463,8 @@
                 }
             });
 
-            // --- 主介面邏輯 (開發中) ---
-            startSearchBtn?.addEventListener(click, async () => {
+            // --- 主介面邏輯 (API 查詢與表格渲染) ---
+            startSearchBtn?.addEventListener('click', async () => {
                 const address = addressSearchInput.value.trim();
                 if (!address) {
                      alert("請輸入要調查的錢包地址。");
@@ -606,20 +472,24 @@
                 }
                 
                 if (!currentLumenApiKeys || !currentLumenApiKeys.etherscan) {
-                    alert("錯誤：未載入 Etherscan API Key。請重新解鎖系統。");
+                    alert("錯誤：未載入 Etherscan API Key。請重新解鎖系統或重新配置。");
                     return;
                 }
 
+                // UI 狀態：載入中
                 startSearchBtn.disabled = true;
                 startSearchBtn.textContent = "查詢中...";
-                initialWorkspaceMessage?.classList.add(hidden);
-                transactionResults?.classList.add(hidden);
-                if (txTableBody) txTableBody.innerHTML = "";
-                if (txCountMessage) txCountMessage.textContent = "";
+                initialWorkspaceMessage?.classList.add('hidden');
+                transactionResults?.classList.add('hidden');
+                if (txTableBody) txTableBody.innerHTML = ""; // 清空表格
+                if (txCountMessage) txCountMessage.textContent = "正在向 Etherscan 獲取資料...";
+                transactionResults?.classList.remove('hidden'); // 顯示骨架，等待資料
 
                 try {
-                    const result = await window.electronAPI.fetchTransactions({
-                        provider: etherscan,
+                    console.log(`Fetching transactions for ${address}...`);
+                    // 呼叫 IPC 後端執行查詢
+                    const result = await electronAPI.fetchTransactions({
+                        provider: 'etherscan',
                         address: address,
                         apiKeys: currentLumenApiKeys
                     });
@@ -629,17 +499,22 @@
                         if (txCountMessage) txCountMessage.textContent = `成功獲取 ${txs.length} 筆最新交易紀錄。`;
                         
                         if (txs.length > 0 && txTableBody) {
+                            // 動態生成表格列
                             txs.forEach(tx => {
-                                const tr = document.createElement(tr);
+                                const tr = document.createElement('tr');
+                                // 轉換 Unix Timestamp
                                 const date = new Date(tx.timeStamp * 1000);
-                                const timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, 0)}/${date.getDate().toString().padStart(2, 0)} ${date.getHours().toString().padStart(2, 0)}:${date.getMinutes().toString().padStart(2, 0)}`;
+                                const timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
                                 
+                                // Wei 轉換為 ETH
+                                const ethValue = (parseFloat(tx.value) / 1e18).toFixed(6);
+
                                 tr.innerHTML = `
                                     <td>${timeStr}</td>
-                                    <td class="hash-col" title="${tx.hash}">${tx.hash.substring(0, 10)}...</td>
-                                    <td class="addr-col" title="${tx.from}">${tx.from.substring(0, 10)}...</td>
-                                    <td class="addr-col" title="${tx.to}">${tx.to.substring(0, 10)}...</td>
-                                    <td class="val-col">${(tx.value / 1e18).toFixed(6)} ETH</td>
+                                    <td class="hash-col" title="${tx.hash}">${tx.hash.substring(0, 15)}...</td>
+                                    <td class="addr-col" title="${tx.from}">${tx.from.substring(0, 15)}...</td>
+                                    <td class="addr-col" title="${tx.to}">${tx.to.substring(0, 15)}...</td>
+                                    <td class="val-col">${ethValue} ETH</td>
                                 `;
                                 txTableBody.appendChild(tr);
                             });
@@ -647,16 +522,17 @@
                             txCountMessage.textContent = "此地址無一般交易紀錄。";
                         }
                         
-                        transactionResults?.classList.remove(hidden);
-
                     } else {
                         alert(`查詢失敗: ${result.message}`);
-                        initialWorkspaceMessage?.classList.remove(hidden);
+                        transactionResults?.classList.add('hidden');
+                        initialWorkspaceMessage?.classList.remove('hidden');
                     }
 
                 } catch (error) {
+                    console.error("Fetch Error:", error);
                     alert(`發生內部錯誤: ${error.message}`);
-                    initialWorkspaceMessage?.classList.remove(hidden);
+                    transactionResults?.classList.add('hidden');
+                    initialWorkspaceMessage?.classList.remove('hidden');
                 } finally {
                     startSearchBtn.disabled = false;
                     startSearchBtn.textContent = "開始追蹤";
