@@ -92,6 +92,40 @@ async function testTronscanApiKey(apiKey) {
 }
 
 
+// --- API 查詢模組 (核心分析功能) ---
+
+async function fetchEtherscanTransactions(apiKey, address) {
+    const ETHERSCAN_API_URL = 'https://api.etherscan.io/v2/api';
+    try {
+        const response = await axios.get(ETHERSCAN_API_URL, {
+            params: {
+                chainid: 1, // 預設 Ethereum Mainnet
+                module: 'account',
+                action: 'txlist',
+                address: address,
+                startblock: 0,
+                endblock: 99999999,
+                page: 1,
+                offset: 50, // 預設抓取最新的 50 筆
+                sort: 'desc',
+                apikey: apiKey
+            }
+        });
+
+        if (response.data?.status === '1' && response.data?.message === 'OK') {
+            // Etherscan 回傳的交易列表在 result 陣列中
+            return { success: true, transactions: response.data.result };
+        } else if (response.data?.status === '0') {
+            return { success: false, message: `查詢失敗: ${response.data.result}` };
+        }
+        return { success: false, message: '收到未預期的 Etherscan API 響應格式。' };
+
+    } catch (error) {
+        console.error('Error fetching Etherscan transactions:', error.message);
+        return { success: false, message: `查詢失敗 (網路或伺服器錯誤): ${error.message}` };
+    }
+}
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 800,
@@ -154,6 +188,16 @@ app.whenReady().then(async () => {
           if (provider === 'etherscan') return testEtherscanApiKey(apiKey);
           if (provider === 'tronscan') return testTronscanApiKey(apiKey);
           return { success: false, message: `Unsupported provider: ${provider}` };
+      });
+
+      ipcMain.handle('fetch-transactions', async (event, { provider, address, apiKeys }) => {
+          // apiKeys 是從前端解密後傳過來的 { etherscan: '...', tronscan: '...' }
+          if (provider === 'etherscan') {
+              if (!apiKeys || !apiKeys.etherscan) return { success: false, message: '未配置 Etherscan API Key。' };
+              return fetchEtherscanTransactions(apiKeys.etherscan, address);
+          }
+          // 未來在這裡加入 tronscan 的查詢邏輯
+          return { success: false, message: `尚未支援 ${provider} 的查詢。` };
       });
 
       createWindow();

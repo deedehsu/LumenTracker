@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getApiKeys: (masterPassword) => ipcRenderer.invoke('get-api-keys', masterPassword),
     isApiKeysConfigured: () => ipcRenderer.invoke('is-api-keys-configured'),
     testApiKey: (data) => ipcRenderer.invoke('test-api-key', data),
+    fetchTransactions: (data) => ipcRenderer.invoke('fetch-transactions', data),
     // 未來可以添加更多需要從渲染進程調用主進程的功能
 });

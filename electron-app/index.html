@@ -202,11 +202,35 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             padding: 20px;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #aaa;
-            font-size: 1.2em;
+            flex-direction: column; /* 改為直向排列 */
+            /* align-items: center; 移除置中，讓表格填滿 */
+            /* color: #aaa; */
+            /* font-size: 1.2em; */
+            overflow-y: auto; /* 允許內容捲動 */
         }
+        
+        /* 交易列表表格樣式 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            word-break: break-all; /* 避免長 Hash 撐破表格 */
+        }
+        th {
+            background-color: #f2f2f2;
+            color: #333;
+            position: sticky; /* 讓表頭固定 */
+            top: 0;
+        }
+        .hash-col { max-width: 150px; }
+        .addr-col { max-width: 150px; }
+        .val-col { text-align: right; }
     </style>
 </head>
 <body>
@@ -319,10 +343,30 @@
             </div>
             <!-- 工作區 -->
             <div class="workspace">
-                <div style="text-align: center;">
+                <div id="initialWorkspaceMessage" style="text-align: center; color: #aaa; font-size: 1.2em;">
                     <p style="font-size: 1.5em; margin-bottom: 10px;">[分析工作區準備就緒]</p>
                     <p>API Keys 已成功載入記憶體。</p>
                     <p>請在上方的搜尋列輸入目標，開始建立幣流關聯圖。</p>
+                </div>
+                
+                <!-- 交易結果表格 (預設隱藏) -->
+                <div id="transactionResults" class="hidden" style="width: 100%;">
+                    <h3 style="color: #333; margin-top: 0;">最新交易紀錄 (Etherscan)</h3>
+                    <p id="txCountMessage" style="color: #666; font-size: 0.9em; margin-bottom: 10px;"></p>
+                    <table id="txTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">時間 (Time)</th>
+                                <th class="hash-col">交易 Hash (TxHash)</th>
+                                <th class="addr-col">發送方 (From)</th>
+                                <th class="addr-col">接收方 (To)</th>
+                                <th class="val-col">金額 (Value in Wei)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="txTableBody">
+                            <!-- 交易列將會動態插入這裡 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -378,6 +422,10 @@
             const confirmMasterPasswordField = document.getElementById('confirmMasterPassword');
             const unlockPasswordField = document.getElementById('unlockPassword');
             const addressSearchInput = document.getElementById('addressSearchInput');
+            const initialWorkspaceMessage = document.getElementById('initialWorkspaceMessage');
+            const transactionResults = document.getElementById('transactionResults');
+            const txCountMessage = document.getElementById('txCountMessage');
+            const txTableBody = document.getElementById('txTableBody');
             
             const passwordError = document.getElementById('passwordError');
             const saveError = document.getElementById('saveError');
@@ -550,12 +598,68 @@
             });
 
             // --- 主介面邏輯 (開發中) ---
-            startSearchBtn?.addEventListener('click', () => {
+            startSearchBtn?.addEventListener(click, async () => {
                 const address = addressSearchInput.value.trim();
-                if(address) {
-                     alert(`[開發中功能]\n您輸入的地址是: ${address}\n系統已經準備好使用您解鎖的 API Keys (${Object.keys(currentLumenApiKeys).join(', ')}) 向區塊鏈節點發起查詢。`);
-                } else {
-                     alert("請輸入要調查的錢包地址或 TxHash。");
+                if (!address) {
+                     alert("請輸入要調查的錢包地址。");
+                     return;
+                }
+                
+                if (!currentLumenApiKeys || !currentLumenApiKeys.etherscan) {
+                    alert("錯誤：未載入 Etherscan API Key。請重新解鎖系統。");
+                    return;
+                }
+
+                startSearchBtn.disabled = true;
+                startSearchBtn.textContent = "查詢中...";
+                initialWorkspaceMessage?.classList.add(hidden);
+                transactionResults?.classList.add(hidden);
+                if (txTableBody) txTableBody.innerHTML = "";
+                if (txCountMessage) txCountMessage.textContent = "";
+
+                try {
+                    const result = await window.electronAPI.fetchTransactions({
+                        provider: etherscan,
+                        address: address,
+                        apiKeys: currentLumenApiKeys
+                    });
+
+                    if (result.success && result.transactions) {
+                        const txs = result.transactions;
+                        if (txCountMessage) txCountMessage.textContent = `成功獲取 ${txs.length} 筆最新交易紀錄。`;
+                        
+                        if (txs.length > 0 && txTableBody) {
+                            txs.forEach(tx => {
+                                const tr = document.createElement(tr);
+                                const date = new Date(tx.timeStamp * 1000);
+                                const timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, 0)}/${date.getDate().toString().padStart(2, 0)} ${date.getHours().toString().padStart(2, 0)}:${date.getMinutes().toString().padStart(2, 0)}`;
+                                
+                                tr.innerHTML = `
+                                    <td>${timeStr}</td>
+                                    <td class="hash-col" title="${tx.hash}">${tx.hash.substring(0, 10)}...</td>
+                                    <td class="addr-col" title="${tx.from}">${tx.from.substring(0, 10)}...</td>
+                                    <td class="addr-col" title="${tx.to}">${tx.to.substring(0, 10)}...</td>
+                                    <td class="val-col">${(tx.value / 1e18).toFixed(6)} ETH</td>
+                                `;
+                                txTableBody.appendChild(tr);
+                            });
+                        } else if (txCountMessage) {
+                            txCountMessage.textContent = "此地址無一般交易紀錄。";
+                        }
+                        
+                        transactionResults?.classList.remove(hidden);
+
+                    } else {
+                        alert(`查詢失敗: ${result.message}`);
+                        initialWorkspaceMessage?.classList.remove(hidden);
+                    }
+
+                } catch (error) {
+                    alert(`發生內部錯誤: ${error.message}`);
+                    initialWorkspaceMessage?.classList.remove(hidden);
+                } finally {
+                    startSearchBtn.disabled = false;
+                    startSearchBtn.textContent = "開始追蹤";
                 }
             });
         });
