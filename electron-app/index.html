@@ -231,8 +231,8 @@
     </div>
 
     <script>
-        // 安全地獲取 Electron API
-        const electronAPI = window.electronAPI;
+        // 安全地獲取 Electron API (避免重複宣告)
+        const myElectronAPI = window.electronAPI;
 
         let temporaryApiKeys = {}; 
         let currentLumenApiKeys = null; 
@@ -301,7 +301,7 @@
             // --- 啟動路由邏輯 ---
             try {
                 hideAllScreens(); // 確保初始狀態乾淨
-                const isConfigured = await electronAPI.isApiKeysConfigured();
+                const isConfigured = await myElectronAPI.isApiKeysConfigured();
                 if (isConfigured) {
                     console.log('API Keys configured. Showing Unlock Screen.');
                     unlockScreen.classList.remove('hidden'); 
@@ -347,7 +347,7 @@
                 etherscanResult.textContent = '測試中...';
                 etherscanResult.className = 'test-result';
                 try {
-                    const result = await electronAPI.testApiKey({ provider: 'etherscan', apiKey });
+                    const result = await myElectronAPI.testApiKey({ provider: 'etherscan', apiKey });
                     etherscanResult.textContent = result.message;
                     etherscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
                 } catch(e) {
@@ -361,7 +361,7 @@
                 tronscanResult.textContent = '測試中...';
                 tronscanResult.className = 'test-result';
                 try {
-                    const result = await electronAPI.testApiKey({ provider: 'tronscan', apiKey });
+                    const result = await myElectronAPI.testApiKey({ provider: 'tronscan', apiKey });
                     tronscanResult.textContent = result.message;
                     tronscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
                 } catch(e) {
@@ -386,7 +386,7 @@
                     submitSetupButton.disabled = true;
                     submitSetupButton.textContent = "加密中...";
                     try {
-                        const result = await electronAPI.saveApiKeys({
+                        const result = await myElectronAPI.saveApiKeys({
                             apiKeys: temporaryApiKeys,
                             masterPassword: masterPass
                         });
@@ -432,7 +432,7 @@
                 unlockButton.disabled = true;
 
                 try {
-                    const result = await electronAPI.getApiKeys(password);
+                    const result = await myElectronAPI.getApiKeys(password);
                     if (result.success) {
                         console.log("解鎖成功！API Keys 已載入記憶體。");
                         currentLumenApiKeys = result.apiKeys; 
@@ -488,7 +488,7 @@
                 try {
                     console.log(`Fetching transactions for ${address}...`);
                     // 呼叫 IPC 後端執行查詢
-                    const result = await electronAPI.fetchTransactions({
+                    const result = await myElectronAPI.fetchTransactions({
                         provider: 'etherscan',
                         address: address,
                         apiKeys: currentLumenApiKeys
