@@ -41,13 +41,27 @@
     </div>
 
     <!-- UI 2: 使用者建檔 (第一次使用) -->
-    <div id="screenUserSetup" class="container hidden">
+    <div id="screenUserSetup" class="container hidden" style="max-width: 600px;">
         <h2>建立調查員檔案</h2>
-        <p>請輸入您的真實姓名或職稱，此名稱將作為系統的唯一帳號。</p>
-        <p>未來所有的鑑識報告與稽核日誌 (Audit Log) 都將與此帳號綁定，以確保法庭證據之不可否認性。</p>
-        <div class="input-group">
-            <input type="text" id="inputUserName" placeholder="請輸入調查員姓名 (例如: 王小明 偵查佐)">
-            <p class="error-message hidden" id="errUserName">姓名不可為空！</p>
+        <p>為符合數位證據之監管鏈規範，請詳實填寫以下資訊。</p>
+        <p>系統將以您的<strong>聯絡電話</strong>作為登入帳號，所有鑑識紀錄皆會與此檔案綁定。</p>
+        <div class="input-group" style="align-items: stretch; text-align: left; padding: 0 40px;">
+            <label style="font-weight: bold; font-size: 0.9em; margin-bottom: -5px; color: #555;">所屬單位 (必填)</label>
+            <input type="text" id="inputUnit" placeholder="例如：刑事警察局偵九大隊" style="width: 100%;">
+            
+            <label style="font-weight: bold; font-size: 0.9em; margin-bottom: -5px; color: #555; margin-top: 10px;">職稱 (必填)</label>
+            <input type="text" id="inputTitle" placeholder="例如：偵查佐" style="width: 100%;">
+            
+            <label style="font-weight: bold; font-size: 0.9em; margin-bottom: -5px; color: #555; margin-top: 10px;">姓名 (必填)</label>
+            <input type="text" id="inputName" placeholder="例如：王小明" style="width: 100%;">
+            
+            <label style="font-weight: bold; font-size: 0.9em; margin-bottom: -5px; color: #555; margin-top: 10px;">聯絡電話 / 登入帳號 (必填)</label>
+            <input type="text" id="inputPhone" placeholder="例如：0912345678 (此為未來登入帳號)" style="width: 100%;">
+            
+            <label style="font-weight: bold; font-size: 0.9em; margin-bottom: -5px; color: #555; margin-top: 10px;">電子郵件 (選填)</label>
+            <input type="text" id="inputEmail" placeholder="例如：investigator@police.gov.tw" style="width: 100%;">
+            
+            <p class="error-message hidden" id="errUserSetup" style="text-align: center; margin-top: 10px;">請填寫所有必填欄位！</p>
         </div>
         <div class="button-group">
             <button class="button secondary" id="btnBackToWelcome">上一步</button>
@@ -143,9 +157,9 @@
         const api = window.electronAPI;
 
         // State variables
-        let tempUserName = '';
+        let tempUserProfile = {};
         let tempPassword = '';
-        let currentUserName = '';
+        let currentUserProfile = {};
 
         // Helper: Hide all screens
         function hideAllScreens() {
@@ -169,8 +183,8 @@
                 const status = await api.checkSystemStatus();
                 if (status.isConfigured) {
                     // Not first run -> Go to Login
-                    currentUserName = status.userName;
-                    document.getElementById('displayLoginUserName').textContent = currentUserName;
+                    currentUserProfile = status.userProfile;
+                    document.getElementById('displayLoginUserName').textContent = `${currentUserProfile.name} (帳號: ${currentUserProfile.phone})`;
                     showScreen('screenLogin');
                     document.getElementById('inputLoginPwd').focus();
                 } else {
@@ -192,13 +206,22 @@
         // --- UI 2 to UI 3 (Setup) ---
         document.getElementById('btnBackToWelcome').addEventListener('click', () => showScreen('screenWelcome'));
         document.getElementById('btnNextToPwdSetup').addEventListener('click', () => {
-            const name = document.getElementById('inputUserName').value.trim();
-            if (!name) {
-                document.getElementById('errUserName').classList.remove('hidden');
+            const unit = document.getElementById('inputUnit').value.trim();
+            const title = document.getElementById('inputTitle').value.trim();
+            const name = document.getElementById('inputName').value.trim();
+            const phone = document.getElementById('inputPhone').value.trim();
+            const email = document.getElementById('inputEmail').value.trim();
+            const errEl = document.getElementById('errUserSetup');
+
+            if (!unit || !title || !name || !phone) {
+                errEl.classList.remove('hidden');
                 return;
             }
-            tempUserName = name;
-            document.getElementById('displaySetupUserName').textContent = tempUserName;
+            
+            errEl.classList.add('hidden');
+            tempUserProfile = { unit, title, name, phone, email };
+            
+            document.getElementById('displaySetupUserName').textContent = `${title} ${name} (帳號: ${phone})`;
             showScreen('screenPasswordSetup');
             document.getElementById('inputNewPwd').focus();
         });
@@ -260,15 +283,15 @@
 
             try {
                 const res = await api.setupSystem({
-                    userName: tempUserName,
+                    userProfile: tempUserProfile,
                     masterPassword: tempPassword,
                     apiKeys: apiKeys
                 });
 
                 if (res.success) {
-                    currentUserName = tempUserName;
+                    currentUserProfile = tempUserProfile;
                     // Setup done, move to UI 5 (Case Hub)
-                    document.getElementById('displayHubUserName').textContent = currentUserName;
+                    document.getElementById('displayHubUserName').textContent = `${currentUserProfile.unit} - ${currentUserProfile.title} ${currentUserProfile.name}`;
                     showScreen('screenCaseHub');
                     
                     // Clear memory
@@ -301,8 +324,8 @@
             try {
                 const res = await api.loginSystem(pwd);
                 if (res.success) {
-                    currentUserName = res.userName;
-                    document.getElementById('displayHubUserName').textContent = currentUserName;
+                    currentUserProfile = res.userProfile;
+                    document.getElementById('displayHubUserName').textContent = `${currentUserProfile.unit} - ${currentUserProfile.title} ${currentUserProfile.name}`;
                     document.getElementById('inputLoginPwd').value = '';
                     showScreen('screenCaseHub');
                 } else {

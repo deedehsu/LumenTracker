@@ -266,21 +266,21 @@ app.whenReady().then(async () => {
       ipcMain.handle('check-system-status', async () => {
           if (!store) return { isConfigured: false };
           const isConfigured = store.get('systemConfigured', false);
-          const userName = store.get('userName', '');
-          return { isConfigured, userName };
+          const userProfile = store.get('userProfile', {});
+          return { isConfigured, userProfile };
       });
 
-      ipcMain.handle('setup-system', async (event, { userName, masterPassword, apiKeys }) => {
+      ipcMain.handle('setup-system', async (event, { userProfile, masterPassword, apiKeys }) => {
           try {
               if (!store) throw new Error('Store is not initialized.');
               const dataString = JSON.stringify(apiKeys);
               const encryptedData = encrypt(dataString, masterPassword);
               
-              store.set('userName', userName);
+              store.set('userProfile', userProfile);
               store.set('encryptedApiKeys', encryptedData);
               store.set('systemConfigured', true);
               
-              console.log(`[Audit Log] System initialized and keys bound for user: ${userName}`);
+              console.log(`[Audit Log] System initialized and keys bound for user: ${userProfile.name} (Phone: ${userProfile.phone})`);
               
               return { success: true };
           } catch (error) {
@@ -297,11 +297,11 @@ app.whenReady().then(async () => {
               
               const decryptedString = decrypt(encryptedData, masterPassword);
               const apiKeys = JSON.parse(decryptedString);
-              const userName = store.get('userName', '');
+              const userProfile = store.get('userProfile', {});
               
-              console.log(`[Audit Log] User ${userName} logged in successfully.`);
+              console.log(`[Audit Log] User ${userProfile.name} (Phone: ${userProfile.phone}) logged in successfully.`);
               
-              return { success: true, apiKeys, userName };
+              return { success: true, apiKeys, userProfile };
           } catch (error) {
               console.error('Login failed:', error);
               return { success: false, message: '密碼錯誤或資料損壞。' };
