@@ -164,6 +164,23 @@
         </div>
     </div>
 
+    
+    <!-- 畫面 5: 案件建立與證據鏈登錄 -->
+    <div id="screenCaseSetup" class="container hidden">
+        <h2 style="color: #d32f2f;">鑑識調查中心 (案件登錄)</h2>
+        <p>為確保法庭證據的<strong>不可否認性 (Non-repudiation)</strong>與<strong>監管鏈 (Chain of Custody)</strong>，請於每次調查前填寫以下資訊。<br>此資訊將綁定於後續所有分析報告與足跡紀錄中。</p>
+        <div class="input-group" style="margin-top: 30px;">
+            <input type="text" id="investigatorUnit" placeholder="調查單位 (例：刑事局偵九隊)" required>
+            <input type="text" id="investigatorName" placeholder="調查員職稱/姓名" required>
+            <input type="text" id="caseId" placeholder="案件編號或名稱 (例：113-反詐-001)" required>
+            <input type="text" id="initialTarget" placeholder="初始已知涉案地址 (選填)">
+            <p class="error-message hidden" id="caseSetupError">請填寫所有必填欄位！</p>
+        </div>
+        <div class="button-group">
+            <button class="button" id="startCaseButton" style="background-color: #d32f2f; font-weight: bold;">立案並開始調查</button>
+        </div>
+    </div>
+
     <!-- 解鎖畫面 (Unlock Screen) -->
     <div id="unlockScreen" class="container hidden">
         <div class="lock-icon">🔒</div>
@@ -191,14 +208,21 @@
             </ul>
         </div>
         <!-- 主要內容區 -->
-        <div class="main-content">
+        <div class="main-content" style="padding: 0;">
+
+        <!-- 證據鏈常駐標頭 -->
+        <div id="evidenceHeader" style="background-color: #343a40; color: #ffc107; padding: 10px 20px; font-family: monospace; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ffc107;">
+            <span id="headerCaseInfo">案件: 未知 | 調查員: 未知</span>
+            <span id="headerTimeInfo">立案時間: 未知</span>
+        </div>
+
             <!-- 搜尋列 -->
-            <div class="search-bar">
+            <div class="search-bar" style="margin: 20px;">
                 <input type="text" id="addressSearchInput" placeholder="請輸入要調查的錢包地址 (例如 ETH, TRX 地址) 或交易 TxHash...">
                 <button id="startSearchBtn">開始追蹤</button>
             </div>
             <!-- 工作區 -->
-            <div class="workspace">
+            <div class="workspace" style="margin: 0 20px 20px 20px;">
                 <div id="initialWorkspaceMessage" style="text-align: center; color: #aaa; margin-top: 50px;">
                     <p style="font-size: 1.5em; margin-bottom: 10px;">[分析工作區準備就緒]</p>
                     <p>API Keys 已成功載入記憶體。</p>
@@ -245,7 +269,7 @@
 
         // 隱藏所有畫面的輔助函數，確保畫面不重疊
         function hideAllScreens() {
-            const screens = ['screen1', 'screen2', 'screen3', 'screen4', 'unlockScreen', 'mainDashboard'];
+            const screens = ['screen1', 'screen2', 'screen3', 'screen4', 'unlockScreen', 'screenCaseSetup', 'mainDashboard'];
             screens.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.add('hidden');
@@ -254,6 +278,7 @@
             document.getElementById('passwordError')?.classList.add('hidden');
             document.getElementById('saveError')?.classList.add('hidden');
             document.getElementById('unlockError')?.classList.add('hidden');
+            document.getElementById('caseSetupError')?.classList.add('hidden');
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -264,7 +289,18 @@
             const screen3 = document.getElementById('screen3');
             const screen4 = document.getElementById('screen4');
             const unlockScreen = document.getElementById('unlockScreen');
-            const mainDashboard = document.getElementById('mainDashboard');
+                        const mainDashboard = document.getElementById('mainDashboard');
+
+            const screenCaseSetup = document.getElementById('screenCaseSetup');
+            const investigatorUnit = document.getElementById('investigatorUnit');
+            const investigatorName = document.getElementById('investigatorName');
+            const caseId = document.getElementById('caseId');
+            const initialTarget = document.getElementById('initialTarget');
+            const caseSetupError = document.getElementById('caseSetupError');
+            const startCaseButton = document.getElementById('startCaseButton');
+            
+            const headerCaseInfo = document.getElementById('headerCaseInfo');
+            const headerTimeInfo = document.getElementById('headerTimeInfo');
 
             const nextToScreen2Button = document.getElementById('nextToScreen2Button');
             const backToScreen1Button = document.getElementById('backToScreen1Button');
@@ -439,8 +475,8 @@
                         
                         unlockPasswordField.value = ""; 
                         hideAllScreens();
-                        mainDashboard.classList.remove("hidden"); // 正式進入主介面！
-                        setTimeout(() => addressSearchInput.focus(), 100);
+                        screenCaseSetup.classList.remove("hidden"); // 進入案件登錄畫面
+                        setTimeout(() => investigatorUnit.focus(), 100);
                     } else {
                         unlockError.textContent = "密碼錯誤或資料損壞！請重試。";
                         unlockError.classList.remove("hidden");
@@ -456,6 +492,42 @@
                 }
             });
             
+            
+            // --- 案件登錄邏輯 (建立證據鏈) ---
+            startCaseButton?.addEventListener('click', () => {
+                const unit = investigatorUnit.value.trim();
+                const name = investigatorName.value.trim();
+                const caseName = caseId.value.trim();
+                const target = initialTarget.value.trim();
+
+                if (!unit || !name || !caseName) {
+                    caseSetupError.classList.remove('hidden');
+                    return;
+                }
+                
+                caseSetupError.classList.add('hidden');
+
+                // 綁定時間戳記
+                const now = new Date();
+                const timeString = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+                // 更新頂部常駐證據鏈資訊
+                headerCaseInfo.textContent = `案件: ${caseName} | 調查單位: ${unit} | 調查員: ${name}`;
+                headerTimeInfo.textContent = `立案時間: ${timeString}`;
+
+                // 切換到主控台
+                hideAllScreens();
+                mainDashboard.classList.remove('hidden');
+
+                // 如果有初始地址，自動填入並觸發搜尋
+                if (target) {
+                    addressSearchInput.value = target;
+                    // 可以選擇是否要自動點擊搜尋，為了防呆先只填寫
+                } else {
+                    setTimeout(() => addressSearchInput.focus(), 100);
+                }
+            });
+
             // 允許在解鎖輸入框按 Enter 鍵解鎖
             unlockPasswordField?.addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') {
