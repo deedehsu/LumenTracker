@@ -181,6 +181,37 @@
         </div>
     </div>
 
+    
+    <!-- 畫面 6: 完善案件資料 -->
+    <div id="screenCaseDetails" class="container hidden" style="max-width: 800px;">
+        <h2 style="color: #2c3e50;">完善案件資料</h2>
+        <p>請輸入已知案情與線索，系統將為您建立專屬的「案件沙盒」，以利後續產出完整的鑑識報告。</p>
+        
+        <div style="text-align: left; margin-top: 20px;">
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; color: #555;">案由 / 犯罪手法摘要</label>
+                <textarea id="caseDescription" placeholder="請簡述案發經過，例如：被害人遭假投資詐騙，將資金匯入指定錢包..." style="width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 5px; resize: vertical;"></textarea>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; color: #555;">已知嫌疑 / 目標地址清單 (請每行輸入一個)</label>
+                <textarea id="knownTargets" placeholder="0x123...&#10;TAbc..." style="width: 100%; height: 100px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 5px; font-family: monospace; resize: vertical;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 15px; border: 1px dashed #ccc; padding: 15px; border-radius: 5px; background-color: #fafafa;">
+                <label style="font-weight: bold; color: #555;">📁 匯入報案文件 (選填，支援 .txt, .csv 等格式)</label>
+                <p style="font-size: 0.85em; color: #888; margin: 5px 0 10px 0;">上傳被害人提供的報表，系統將嘗試自動提取錢包地址與交易紀錄。</p>
+                <input type="file" id="caseFileInput" accept=".txt,.csv,.doc,.docx" style="font-size: 0.9em;">
+                <p id="fileUploadStatus" style="font-size: 0.9em; color: #28a745; margin-top: 5px;"></p>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="button secondary" id="backToCaseSetupButton">上一步 (修改立案資訊)</button>
+            <button class="button" id="enterDashboardButton" style="background-color: #4CAF50; font-weight: bold;">完成建檔，進入分析中心</button>
+        </div>
+    </div>
+
     <!-- 解鎖畫面 (Unlock Screen) -->
     <div id="unlockScreen" class="container hidden">
         <div class="lock-icon">🔒</div>
@@ -289,7 +320,7 @@
 
         // 隱藏所有畫面的輔助函數，確保畫面不重疊
         function hideAllScreens() {
-            const screens = ['screen1', 'screen2', 'screen3', 'screen4', 'unlockScreen', 'screenCaseSetup', 'mainDashboard'];
+            const screens = ['screen1', 'screen2', 'screen3', 'screen4', 'unlockScreen', 'screenCaseSetup', 'screenCaseDetails', 'mainDashboard'];
             screens.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.add('hidden');
@@ -311,7 +342,14 @@
             const unlockScreen = document.getElementById('unlockScreen');
                         const mainDashboard = document.getElementById('mainDashboard');
 
-            const screenCaseSetup = document.getElementById('screenCaseSetup');
+                        const screenCaseSetup = document.getElementById('screenCaseSetup');
+            const screenCaseDetails = document.getElementById('screenCaseDetails');
+            const caseDescription = document.getElementById('caseDescription');
+            const knownTargets = document.getElementById('knownTargets');
+            const caseFileInput = document.getElementById('caseFileInput');
+            const fileUploadStatus = document.getElementById('fileUploadStatus');
+            const backToCaseSetupButton = document.getElementById('backToCaseSetupButton');
+            const enterDashboardButton = document.getElementById('enterDashboardButton');
             const investigatorUnit = document.getElementById('investigatorUnit');
             const investigatorName = document.getElementById('investigatorName');
             const caseId = document.getElementById('caseId');
@@ -550,14 +588,45 @@
                 headerCaseInfo.textContent = `案件: ${caseName} | 調查單位: ${unit} | 調查員: ${name}`;
                 headerTimeInfo.textContent = `立案時間: ${timeString}`;
 
-                // 切換到主控台
+                // 將初始地址自動帶入下一頁的清單中
+                if (target) {
+                    knownTargets.value = target;
+                }
+
+                // 切換到「完善案件資料」畫面
+                hideAllScreens();
+                screenCaseDetails.classList.remove('hidden');
+                setTimeout(() => caseDescription.focus(), 100);
+            });
+
+            
+            // --- 完善案件資料邏輯 ---
+            backToCaseSetupButton?.addEventListener('click', () => {
+                hideAllScreens();
+                screenCaseSetup.classList.remove('hidden');
+            });
+
+            // 處理檔案上傳回饋 (純前端示意，後續串接 IPC)
+            caseFileInput?.addEventListener('change', (e) => {
+                if(e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    fileUploadStatus.textContent = `已選取: ${file.name} (大小: ${(file.size/1024).toFixed(1)} KB)。系統將於分析階段進行解析。`;
+                }
+            });
+
+            enterDashboardButton?.addEventListener('click', () => {
+                // 將 TextArea 中的第一個地址，自動填入主控台搜尋框作為起點
+                const targets = knownTargets.value.split('\n').map(s => s.trim()).filter(s => s);
+                if (targets.length > 0) {
+                    addressSearchInput.value = targets[0];
+                }
+
                 hideAllScreens();
                 mainDashboard.classList.remove('hidden');
-
-                // 如果有初始地址，自動填入並觸發搜尋
-                if (target) {
-                    addressSearchInput.value = target;
-                    // 可以選擇是否要自動點擊搜尋，為了防呆先只填寫
+                
+                // 如果有初始地址，直接觸發初勘！
+                if (addressSearchInput.value) {
+                    startSearchBtn.click();
                 } else {
                     setTimeout(() => addressSearchInput.focus(), 100);
                 }
