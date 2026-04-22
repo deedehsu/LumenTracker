@@ -263,39 +263,49 @@ app.whenReady().then(async () => {
 
       // --- IPC 處理器 ---
 
-      ipcMain.handle('save-api-keys', async (event, { apiKeys, masterPassword }) => {
+      ipcMain.handle('check-system-status', async () => {
+          if (!store) return { isConfigured: false };
+          const isConfigured = store.get('systemConfigured', false);
+          const userName = store.get('userName', '');
+          return { isConfigured, userName };
+      });
+
+      ipcMain.handle('setup-system', async (event, { userName, masterPassword, apiKeys }) => {
           try {
               if (!store) throw new Error('Store is not initialized.');
-              // apiKeys 預期是一個物件，例如 { etherscan: 'key1', tronscan: 'key2' }
               const dataString = JSON.stringify(apiKeys);
               const encryptedData = encrypt(dataString, masterPassword);
+              
+              store.set('userName', userName);
               store.set('encryptedApiKeys', encryptedData);
-              store.set('apiKeysConfigured', true);
+              store.set('systemConfigured', true);
+              
+              console.log(`[Audit Log] System initialized and keys bound for user: ${userName}`);
+              
               return { success: true };
           } catch (error) {
-              console.error('Failed to save API Keys:', error);
+              console.error('Setup failed:', error);
               return { success: false, message: error.message };
           }
       });
 
-      ipcMain.handle('get-api-keys', async (event, masterPassword) => {
+      ipcMain.handle('login-system', async (event, masterPassword) => {
           try {
               if (!store) throw new Error('Store is not initialized.');
               const encryptedData = store.get('encryptedApiKeys');
-              if (!encryptedData) return { success: false, message: 'No API Keys configured.' };
+              if (!encryptedData) return { success: false, message: 'System not configured.' };
               
               const decryptedString = decrypt(encryptedData, masterPassword);
               const apiKeys = JSON.parse(decryptedString);
-              return { success: true, apiKeys };
+              const userName = store.get('userName', '');
+              
+              console.log(`[Audit Log] User ${userName} logged in successfully.`);
+              
+              return { success: true, apiKeys, userName };
           } catch (error) {
-              console.error('Failed to retrieve API Keys:', error);
-              return { success: false, message: 'Failed to decrypt API Keys. Incorrect password or corrupted data.' };
+              console.error('Login failed:', error);
+              return { success: false, message: '密碼錯誤或資料損壞。' };
           }
-      });
-
-      ipcMain.handle('is-api-keys-configured', async () => {
-          if (!store) return false;
-          return store.get('apiKeysConfigured', false);
       });
 
       ipcMain.handle('test-api-key', async (event, { provider, apiKey }) => {

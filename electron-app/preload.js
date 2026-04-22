@@ -1,12 +1,10 @@
-
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    saveApiKeys: (data) => ipcRenderer.invoke('save-api-keys', data),
-    getApiKeys: (masterPassword) => ipcRenderer.invoke('get-api-keys', masterPassword),
-    isApiKeysConfigured: () => ipcRenderer.invoke('is-api-keys-configured'),
+    checkSystemStatus: () => ipcRenderer.invoke('check-system-status'),
+    setupSystem: (data) => ipcRenderer.invoke('setup-system', data),
+    loginSystem: (password) => ipcRenderer.invoke('login-system', password),
     testApiKey: (data) => ipcRenderer.invoke('test-api-key', data),
     fetchTransactions: (data) => ipcRenderer.invoke('fetch-transactions', data),
-    analyzeWallet: (data) => ipcRenderer.invoke('analyze-wallet', data),
-    // 未來可以添加更多需要從渲染進程調用主進程的功能
+    analyzeWallet: (data) => ipcRenderer.invoke('analyze-wallet', data)
 });

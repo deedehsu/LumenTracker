@@ -4,32 +4,8 @@
     <meta charset="UTF-8">
     <title>LumenTracker</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden; /* 防止出現卷軸 */
-        }
-        .container {
-            background-color: #ffffff;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 700px;
-            width: 90%;
-            text-align: center;
-            /* 讓 container 垂直水平置中 */
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+        .container { background-color: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 700px; width: 90%; text-align: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
         h1 { color: #4CAF50; margin-bottom: 20px; font-size: 2.2em; }
         h2 { color: #333; margin-bottom: 20px; font-size: 1.8em; }
         p { font-size: 1.1em; line-height: 1.6; margin-bottom: 15px; }
@@ -43,781 +19,323 @@
         .input-group { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
         input[type="password"], input[type="text"] { width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box; }
         .hidden { display: none !important; }
-        .checkmark { color: #4CAF50; font-size: 4em; margin-bottom: 20px; }
-        .lock-icon { color: #007bff; font-size: 4em; margin-bottom: 20px; }
         .error-message { color: #dc3545; font-size: 0.9em; margin-top: -10px; margin-bottom: 10px; }
         .success-message { color: #28a745; font-size: 0.9em; margin-top: -10px; margin-bottom: 10px; }
         .api-section { border: 1px solid #eee; padding: 20px; border-radius: 8px; margin-bottom: 20px; background-color: #fafafa; }
         .api-section h3 { margin-top: 0; font-size: 1.2em; color: #555; }
         .test-result { margin-top: 5px; font-weight: bold; }
-
-        /* Dashboard styles */
-        .dashboard-layout {
-            display: flex;
-            width: 100vw;
-            height: 100vh;
-            background-color: #f0f2f5;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        .sidebar { width: 250px; background-color: #2c3e50; color: white; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column;}
-        .sidebar h2 { color: #ecf0f1; border-bottom: 1px solid #34495e; padding-bottom: 10px; margin-top: 0; }
-        .sidebar ul { list-style: none; padding: 0; margin: 0; }
-        .sidebar li { padding: 15px 10px; cursor: pointer; border-bottom: 1px solid #34495e; transition: background-color 0.2s;}
-        .sidebar li:hover { background-color: #34495e; }
-        .sidebar li.active { color: #4CAF50; font-weight: bold; border-left: 4px solid #4CAF50; padding-left: 6px;}
-
-        .main-content { flex-grow: 1; padding: 30px; box-sizing: border-box; display: flex; flex-direction: column; overflow-y: auto; }
-        .search-bar { display: flex; margin-bottom: 30px; background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .search-bar input { flex-grow: 1; padding: 12px; font-size: 1.1em; border: 1px solid #ced4da; border-radius: 4px 0 0 4px; outline: none; }
-        .search-bar button { padding: 12px 25px; font-size: 1.1em; background-color: #28a745; color: white; border: none; border-radius: 0 4px 4px 0; cursor: pointer; transition: background-color 0.2s;}
-        .search-bar button:hover { background-color: #218838; }
-        .search-bar button:disabled { background-color: #8fdfa1; cursor: not-allowed; }
-
-        .workspace { flex-grow: 1; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
-        
-        /* Table Styles */
-        table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: left; }
-        th { background-color: #f8f9fa; color: #333; position: sticky; top: 0; font-weight: bold; border-bottom: 2px solid #dee2e6;}
-        tr:nth-child(even) { background-color: #fcfcfc; }
-        tr:hover { background-color: #f1f1f1; }
-        .hash-col { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; color: #0056b3;}
-        .addr-col { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
-        .val-col { text-align: right; font-family: monospace; font-weight: bold;}
+        .lock-icon { color: #007bff; font-size: 4em; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <!-- 畫面 1: 歡迎與資安宣告 -->
-    <div id="screen1" class="container hidden">
+    <!-- UI 1: 歡迎畫面 (第一次使用) -->
+    <div id="screenWelcome" class="container hidden">
         <h1>歡迎使用 LumenTracker</h1>
         <p>為了保護您的偵查隱私與案件機密，本軟體採**完全單機運行**。</p>
-        <p>我們不會將您的任何查詢紀錄上傳至雲端伺服器。</p>
-        <p>為了開始您的調查，我們需要為您的電腦配備一把專屬的「鑰匙」。</p>
+        <p>這是一套專業的區塊鏈鑑識平台，我們將引導您完成初始化設定。</p>
         <div class="button-group">
-            <button class="button" id="nextToScreen2Button">開始設定</button>
+            <button class="button" id="btnNextToUserSetup">開始設定</button>
         </div>
         <p class="disclaimer">請詳閱我們的<a href="#" onclick="return false;">隱私政策與資安聲明</a></p>
     </div>
 
-    <!-- 畫面 2: 什麼是區塊鏈 API Key？ -->
-    <div id="screen2" class="container hidden">
-        <h2>什麼是區塊鏈 API Key？</h2>
-        <p>區塊鏈的資料是公開的，但要讀取這些資料，我們需要透過特定的通道（節點供應商）。</p>
-        <p>如果您使用我們內建的通道，您的來源可能會與其他調查員混淆，甚至面臨頻寬限制。</p>
-        <p>因此，我們將引導您申請一組**免費且專屬於您**的 API Key。</p>
-        <div class="button-group">
-            <button class="button secondary" id="backToScreen1Button">上一步</button>
-            <button class="button" id="nextToScreen3Button">繼續</button>
-        </div>
-    </div>
-
-    <!-- 畫面 3: API Key 申請教學 (多鏈支援) -->
-    <div id="screen3" class="container hidden" style="max-width: 800px;">
-        <h2>配置您的 API Keys</h2>
-        <p>請申請以下 API Keys 以解鎖 LumenTracker 的完整分析功能。您至少需要配置一個才能繼續。</p>
-
-        <!-- Etherscan 區塊 -->
-        <div class="api-section">
-            <h3>1. Etherscan API Key (必備，支援以太坊及 EVM 兼容鏈)</h3>
-            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">請前往 etherscan.io 註冊並新增金鑰。</p>
-            <div class="input-group" style="flex-direction: row; justify-content: center;">
-                <input type="text" id="etherscanKeyInput" placeholder="貼上 Etherscan API Key">
-                <button class="button" id="testEtherscanButton" style="padding: 10px 15px; font-size: 0.9em;">測試連線</button>
-            </div>
-            <div id="etherscanResult" class="test-result"></div>
-        </div>
-
-        <!-- Tronscan 區塊 -->
-        <div class="api-section">
-            <h3>2. Tronscan API Key (建議，支援波場鏈與 TRC-20 USDT 分析)</h3>
-            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">請前往 tronscan.org 登入並在「開發者」中產生。</p>
-            <div class="input-group" style="flex-direction: row; justify-content: center;">
-                <input type="text" id="tronscanKeyInput" placeholder="貼上 Tronscan API Key (選填)">
-                <button class="button" id="testTronscanButton" style="padding: 10px 15px; font-size: 0.9em;">測試連線</button>
-            </div>
-            <div id="tronscanResult" class="test-result"></div>
-        </div>
-
-        <div class="button-group">
-            <button class="button secondary" id="backToScreen2Button">上一步</button>
-            <button class="button" id="nextToScreen4Button">完成配置，下一步</button>
-        </div>
-    </div>
-
-    <!-- 畫面 4: 設定主密碼 -->
-    <div id="screen4" class="container hidden">
-        <h2>設定主密碼</h2>
-        <p>為了確保您的 API Key 和其他敏感資料的安全，我們建議設定一個**主密碼**。</p>
-        <p>此密碼將用於使用高等級加密保護您的 API Key，並在每次啟動軟體時要求輸入。</p>
+    <!-- UI 2: 使用者建檔 (第一次使用) -->
+    <div id="screenUserSetup" class="container hidden">
+        <h2>建立調查員檔案</h2>
+        <p>請輸入您的真實姓名或職稱，此名稱將作為系統的唯一帳號。</p>
+        <p>未來所有的鑑識報告與稽核日誌 (Audit Log) 都將與此帳號綁定，以確保法庭證據之不可否認性。</p>
         <div class="input-group">
-            <input type="password" id="masterPassword" placeholder="請輸入主密碼" autocomplete="new-password">
-            <input type="password" id="confirmMasterPassword" placeholder="請再次輸入主密碼" autocomplete="new-password">
-            <p class="error-message hidden" id="passwordError">密碼不一致或未填寫！</p>
-            <p class="error-message hidden" id="saveError">API Key 儲存失敗，請重試。</p>
+            <input type="text" id="inputUserName" placeholder="請輸入調查員姓名 (例如: 王小明 偵查佐)">
+            <p class="error-message hidden" id="errUserName">姓名不可為空！</p>
         </div>
         <div class="button-group">
-            <button class="button secondary" id="backToScreen3Button">上一步</button>
-            <button class="button" id="submitSetupButton">加密並完成設定</button>
+            <button class="button secondary" id="btnBackToWelcome">上一步</button>
+            <button class="button" id="btnNextToPwdSetup">下一步</button>
         </div>
     </div>
 
-    
-    <!-- 畫面 5: 案件建立與證據鏈登錄 -->
-    <div id="screenCaseSetup" class="container hidden">
-        <h2 style="color: #d32f2f;">鑑識調查中心 (案件登錄)</h2>
-        <p>為確保法庭證據的<strong>不可否認性 (Non-repudiation)</strong>與<strong>監管鏈 (Chain of Custody)</strong>，請於每次調查前填寫以下資訊。<br>此資訊將綁定於後續所有分析報告與足跡紀錄中。</p>
-        <div class="input-group" style="margin-top: 30px;">
-            <input type="text" id="investigatorUnit" placeholder="調查單位 (例：刑事局偵九隊)" required>
-            <input type="text" id="investigatorName" placeholder="調查員職稱/姓名" required>
-            <input type="text" id="caseId" placeholder="案件編號或名稱 (例：113-反詐-001)" required>
-            <input type="text" id="initialTarget" placeholder="初始已知涉案地址 (選填)">
-            <p class="error-message hidden" id="caseSetupError">請填寫所有必填欄位！</p>
+    <!-- UI 3: 密碼設定 (第一次使用) -->
+    <div id="screenPasswordSetup" class="container hidden">
+        <h2>設定登入主密碼</h2>
+        <p>請為調查員 <strong id="displaySetupUserName" style="color:#007bff;"></strong> 設定一組主密碼。</p>
+        <p>此密碼將用於加密您的本機資料庫與 API 金鑰，請妥善保管。</p>
+        <div class="input-group">
+            <input type="password" id="inputNewPwd" placeholder="請輸入主密碼" autocomplete="new-password">
+            <input type="password" id="inputConfirmPwd" placeholder="請再次輸入主密碼" autocomplete="new-password">
+            <p class="error-message hidden" id="errPwdSetup">密碼不一致或未填寫！</p>
         </div>
         <div class="button-group">
-            <button class="button" id="startCaseButton" style="background-color: #d32f2f; font-weight: bold;">立案並開始調查</button>
+            <button class="button secondary" id="btnBackToUserSetup">上一步</button>
+            <button class="button" id="btnNextToApiSetup">下一步</button>
         </div>
     </div>
 
-    
-    <!-- 畫面 6: 完善案件資料 -->
-    <div id="screenCaseDetails" class="container hidden" style="max-width: 800px;">
-        <h2 style="color: #2c3e50;">完善案件資料</h2>
-        <p>請輸入已知案情與線索，系統將為您建立專屬的「案件沙盒」，以利後續產出完整的鑑識報告。</p>
+    <!-- UI 4: API Key 申請與綁定 (第一次使用) -->
+    <div id="screenApiSetup" class="container hidden" style="max-width: 800px;">
+        <h2>配置區塊鏈 API 金鑰</h2>
+        <p>系統需要透過節點供應商獲取鏈上公開資料。請綁定您的專屬 API Key (BYOK架構)。</p>
         
-        <div style="text-align: left; margin-top: 20px;">
-            <div style="margin-bottom: 15px;">
-                <label style="font-weight: bold; color: #555;">案由 / 犯罪手法摘要</label>
-                <textarea id="caseDescription" placeholder="請簡述案發經過，例如：被害人遭假投資詐騙，將資金匯入指定錢包..." style="width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 5px; resize: vertical;"></textarea>
+        <div class="api-section">
+            <h3>Etherscan API Key (必備)</h3>
+            <div class="input-group" style="flex-direction: row; justify-content: center;">
+                <input type="text" id="inputEtherscanKey" placeholder="貼上 Etherscan API Key">
+                <button class="button" id="btnTestEtherscan" style="padding: 10px 15px; font-size: 0.9em;">測試連線</button>
             </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="font-weight: bold; color: #555;">已知嫌疑 / 目標地址清單 (請每行輸入一個)</label>
-                <textarea id="knownTargets" placeholder="0x123...&#10;TAbc..." style="width: 100%; height: 100px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 5px; font-family: monospace; resize: vertical;"></textarea>
-            </div>
-
-            <div style="margin-bottom: 15px; border: 1px dashed #ccc; padding: 15px; border-radius: 5px; background-color: #fafafa;">
-                <label style="font-weight: bold; color: #555;">📁 匯入報案文件 (選填，支援 .txt, .csv 等格式)</label>
-                <p style="font-size: 0.85em; color: #888; margin: 5px 0 10px 0;">上傳被害人提供的報表，系統將嘗試自動提取錢包地址與交易紀錄。</p>
-                <input type="file" id="caseFileInput" accept=".txt,.csv,.doc,.docx" style="font-size: 0.9em;">
-                <p id="fileUploadStatus" style="font-size: 0.9em; color: #28a745; margin-top: 5px;"></p>
-            </div>
+            <div id="resEtherscan" class="test-result"></div>
         </div>
 
+        <div class="api-section">
+            <h3>Tronscan API Key (建議)</h3>
+            <div class="input-group" style="flex-direction: row; justify-content: center;">
+                <input type="text" id="inputTronscanKey" placeholder="貼上 Tronscan API Key (選填)">
+                <button class="button" id="btnTestTronscan" style="padding: 10px 15px; font-size: 0.9em;">測試連線</button>
+            </div>
+            <div id="resTronscan" class="test-result"></div>
+        </div>
+
+        <p class="error-message hidden" id="errApiSetup"></p>
+
         <div class="button-group">
-            <button class="button secondary" id="backToCaseSetupButton">上一步 (修改立案資訊)</button>
-            <button class="button" id="enterDashboardButton" style="background-color: #4CAF50; font-weight: bold;">完成建檔，進入分析中心</button>
+            <button class="button secondary" id="btnBackToPwdSetup">上一步</button>
+            <button class="button" id="btnFinishSetup" style="background-color: #28a745;">完成設定並加密儲存</button>
         </div>
     </div>
 
-    <!-- 解鎖畫面 (Unlock Screen) -->
-    <div id="unlockScreen" class="container hidden">
+    <!-- UI 3 (Login): 系統登入 (非第一次使用) -->
+    <div id="screenLogin" class="container hidden">
         <div class="lock-icon">🔒</div>
         <h2>系統已鎖定</h2>
-        <p>您的 API Keys 已安全地存放在本地。</p>
-        <p>請輸入您的主密碼以解鎖 LumenTracker 並開始調查。</p>
+        <p>歡迎回來，調查員 <strong id="displayLoginUserName" style="color:#007bff;"></strong></p>
+        <p>請輸入您的主密碼以解鎖 LumenTracker。</p>
         <div class="input-group">
-            <input type="password" id="unlockPassword" placeholder="請輸入主密碼" autocomplete="current-password">
-            <p class="error-message hidden" id="unlockError">密碼錯誤或資料損壞！請重試。</p>
+            <input type="password" id="inputLoginPwd" placeholder="請輸入主密碼" autocomplete="current-password">
+            <p class="error-message hidden" id="errLogin">密碼錯誤或資料損壞！請重試。</p>
         </div>
         <div class="button-group">
-            <button class="button" id="unlockButton">解鎖並進入系統</button>
+            <button class="button" id="btnLogin">解鎖並進入系統</button>
         </div>
     </div>
 
-    <!-- 主應用程式介面骨架 (Main Dashboard) -->
-    <div id="mainDashboard" class="dashboard-layout hidden">
-        <!-- 側邊欄 -->
-        <div class="sidebar">
-            <h2>LumenTracker</h2>
-            <ul>
-                <li class="active">🔍 新的調查</li>
-                <li>📁 歷史案件 (開發中)</li>
-                <li>⚙️ 系統設定 (開發中)</li>
-            </ul>
-        </div>
-        <!-- 主要內容區 -->
-        <div class="main-content" style="padding: 0;">
-
-        <!-- 證據鏈常駐標頭 -->
-        <div id="evidenceHeader" style="background-color: #343a40; color: #ffc107; padding: 10px 20px; font-family: monospace; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ffc107;">
-            <span id="headerCaseInfo">案件: 未知 | 調查員: 未知</span>
-            <span id="headerTimeInfo">立案時間: 未知</span>
-        </div>
-
-            <!-- 搜尋列 -->
-            <div class="search-bar" style="margin: 20px;">
-                <input type="text" id="addressSearchInput" placeholder="請輸入要調查的錢包地址 (例如 ETH, TRX 地址) 或交易 TxHash...">
-                <button id="startSearchBtn">開始追蹤</button>
-            </div>
-            <!-- 工作區 -->
-            <div class="workspace" style="margin: 0 20px 20px 20px;">
-                <div id="initialWorkspaceMessage" style="text-align: center; color: #aaa; margin-top: 50px;">
-                    <p style="font-size: 1.5em; margin-bottom: 10px;">[分析工作區準備就緒]</p>
-                    <p>API Keys 已成功載入記憶體。</p>
-                    <p>請在上方的搜尋列輸入目標，開始查詢交易紀錄。</p>
-                </div>
-                
-                
-                
-                <!-- 初勘側寫卡片 (修改為常駐顯示) -->
-                <div id="walletProfileCard" class="hidden" style="width: 100%; margin-bottom: 20px; background-color: #f8f9fa; border-left: 5px solid #007bff; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 15px; box-sizing: border-box;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #dee2e6; padding-bottom: 8px; margin-bottom: 15px;">
-                        <h3 style="margin: 0; color: #007bff;">📊 目標初勘 (Target Profiling)</h3>
-                        <button id="toggleTxTableBtn" class="button secondary" style="padding: 5px 15px; font-size: 0.9em; display: none;">查閱交易明細</button>
-                    </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 0.9em;">
-                        <div style="flex: 1; min-width: 250px;">
-                            <p><strong>🕒 錢包啟用時間:</strong> <span id="profActivation">載入中...</span></p>
-                            <p><strong>⛽ 啟動手續費來源:</strong> <span id="profFirstGas" style="font-family: monospace; color: #d32f2f;">載入中...</span></p>
-                            <p><strong>⛽ 最大手續費來源:</strong> <span id="profTopGas" style="font-family: monospace; color: #d32f2f;">載入中...</span> <span id="profTopGasAmount" style="color: #666; font-size: 0.9em;"></span></p>
-                            <p><strong>⚠️ 洗錢合約授權 (Approve) 次數:</strong> <span id="profApprovals" style="font-weight: bold;">載入中...</span></p>
-                        </div>
-                        <div style="flex: 1; min-width: 250px;">
-                            <p><strong>📥 USDT 總收入:</strong> <span id="profUsdtIn" style="color: #28a745; font-weight: bold;">載入中...</span> (<span id="profUsdtInCount">0</span> 筆)</p>
-                            <p><strong>📤 USDT 總轉出:</strong> <span id="profUsdtOut" style="color: #dc3545; font-weight: bold;">載入中...</span> (<span id="profUsdtOutCount">0</span> 筆)</p>
-                            <p><strong>📥 ETH 總收入:</strong> <span id="profEthIn">載入中...</span> (<span id="profEthInCount">0</span> 筆)</p>
-                            <p><strong>📤 ETH 總轉出:</strong> <span id="profEthOut">載入中...</span> (<span id="profEthOutCount">0</span> 筆)</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 關聯分析圖表區 (預留) -->
-                <div id="graphWorkspace" class="hidden" style="width: 100%; height: 400px; background-color: #fcfcfc; border: 1px dashed #ccc; border-radius: 4px; display: flex; justify-content: center; align-items: center; color: #888; font-size: 1.2em; margin-bottom: 20px;">
-                    [涉案幣流關聯圖 (Visual Graph) - 待開發]
-                </div>
-
-
-                <!-- 交易結果表格 (預設隱藏) -->
-                <div id="transactionResults" class="hidden" style="width: 100%;">
-                    <h3 style="color: #333; margin-top: 0; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">最新交易紀錄 (Etherscan)</h3>
-                    <p id="txCountMessage" style="color: #666; font-size: 1em; margin-bottom: 15px; font-weight: bold;"></p>
-                    <div style="overflow-x: auto;">
-                        <table id="txTable">
-                            <thead>
-                                <tr>
-                                    <th style="width: 15%;">時間 (Time)</th>
-                                    <th class="hash-col">交易 Hash (TxHash)</th>
-                                    <th class="addr-col">發送方 (From)</th>
-                                    <th class="addr-col">接收方 (To)</th>
-                                    <th class="val-col">金額 (Value)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="txTableBody">
-                                <!-- 交易列將會動態插入這裡 -->
-                            </tbody>
-                        </table>
-                    </div>
+    <!-- UI 5: 案件管理樞紐 (Case Hub) -->
+    <div id="screenCaseHub" class="container hidden" style="max-width: 800px;">
+        <h2 style="color: #2c3e50;">案件管理樞紐 (Case Hub)</h2>
+        <p>調查員 <strong id="displayHubUserName" style="color:#4CAF50;"></strong>，請選擇您要執行的作業：</p>
+        
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 25px; margin-top: 30px;">
+            <!-- 建立案件 -->
+            <button class="button" id="btnCreateCase" style="width: 80%; padding: 20px; font-size: 1.3em; background-color: #007bff; border-radius: 8px;">
+                📄 建立新案件 (Create Case)
+            </button>
+            
+            <!-- 導入案件區域 -->
+            <div style="width: 80%; border: 2px dashed #ccc; padding: 20px; border-radius: 8px; background-color: #fafafa;">
+                <h3 style="margin-top: 0; color: #555; text-align: left;">📥 導入現有案件 (Import Case)</h3>
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
+                    <button class="button secondary" id="btnImportEdit" style="flex: 1; padding: 15px; font-size: 1.1em;">✏️ 編輯 (繼續分析)</button>
+                    <button class="button secondary" id="btnImportAudit" style="flex: 1; padding: 15px; font-size: 1.1em; opacity: 0.5; cursor: not-allowed;" disabled title="目前架構中暫不開放">🛡️ 審核 (暫不開放)</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 安全地獲取 Electron API (避免重複宣告)
-        const myElectronAPI = window.electronAPI;
+        const api = window.electronAPI;
 
-        let temporaryApiKeys = {}; 
-        let currentLumenApiKeys = null; 
+        // State variables
+        let tempUserName = '';
+        let tempPassword = '';
+        let currentUserName = '';
 
-        // 全域錯誤捕獲
-        window.onerror = function(message, source, lineno, colno, error) {
-            console.error(`Frontend Error: ${message} at ${source}:${lineno}:${colno}`, error);
-            return true; 
-        };
-
-        // 隱藏所有畫面的輔助函數，確保畫面不重疊
+        // Helper: Hide all screens
         function hideAllScreens() {
-            const screens = ['screen1', 'screen2', 'screen3', 'screen4', 'unlockScreen', 'screenCaseSetup', 'screenCaseDetails', 'mainDashboard'];
+            const screens = ['screenWelcome', 'screenUserSetup', 'screenPasswordSetup', 'screenApiSetup', 'screenLogin', 'screenCaseHub'];
             screens.forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.classList.add('hidden');
+                if(el) el.classList.add('hidden');
             });
-            // 隱藏錯誤訊息
-            document.getElementById('passwordError')?.classList.add('hidden');
-            document.getElementById('saveError')?.classList.add('hidden');
-            document.getElementById('unlockError')?.classList.add('hidden');
-            document.getElementById('caseSetupError')?.classList.add('hidden');
+            // Clear errors
+            document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
         }
 
+        function showScreen(id) {
+            hideAllScreens();
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        // --- Initialization ---
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('DOMContentLoaded fired.');
-            
-            const screen1 = document.getElementById('screen1');
-            const screen2 = document.getElementById('screen2');
-            const screen3 = document.getElementById('screen3');
-            const screen4 = document.getElementById('screen4');
-            const unlockScreen = document.getElementById('unlockScreen');
-                        const mainDashboard = document.getElementById('mainDashboard');
-
-                        const screenCaseSetup = document.getElementById('screenCaseSetup');
-            const screenCaseDetails = document.getElementById('screenCaseDetails');
-            const caseDescription = document.getElementById('caseDescription');
-            const knownTargets = document.getElementById('knownTargets');
-            const caseFileInput = document.getElementById('caseFileInput');
-            const fileUploadStatus = document.getElementById('fileUploadStatus');
-            const backToCaseSetupButton = document.getElementById('backToCaseSetupButton');
-            const enterDashboardButton = document.getElementById('enterDashboardButton');
-            const investigatorUnit = document.getElementById('investigatorUnit');
-            const investigatorName = document.getElementById('investigatorName');
-            const caseId = document.getElementById('caseId');
-            const initialTarget = document.getElementById('initialTarget');
-            const caseSetupError = document.getElementById('caseSetupError');
-            const startCaseButton = document.getElementById('startCaseButton');
-            
-            const headerCaseInfo = document.getElementById('headerCaseInfo');
-            const headerTimeInfo = document.getElementById('headerTimeInfo');
-
-            const nextToScreen2Button = document.getElementById('nextToScreen2Button');
-            const backToScreen1Button = document.getElementById('backToScreen1Button');
-            const nextToScreen3Button = document.getElementById('nextToScreen3Button');
-            const backToScreen2Button = document.getElementById('backToScreen2Button');
-            const nextToScreen4Button = document.getElementById('nextToScreen4Button');
-            const backToScreen3Button = document.getElementById('backToScreen3Button');
-            const submitSetupButton = document.getElementById('submitSetupButton');
-            const unlockButton = document.getElementById('unlockButton');
-            
-            const testEtherscanButton = document.getElementById('testEtherscanButton');
-            const testTronscanButton = document.getElementById('testTronscanButton');
-            const startSearchBtn = document.getElementById('startSearchBtn');
-
-            const etherscanKeyInput = document.getElementById('etherscanKeyInput');
-            const tronscanKeyInput = document.getElementById('tronscanKeyInput');
-            const etherscanResult = document.getElementById('etherscanResult');
-            const tronscanResult = document.getElementById('tronscanResult');
-            
-            const masterPasswordField = document.getElementById('masterPassword');
-            const confirmMasterPasswordField = document.getElementById('confirmMasterPassword');
-            const unlockPasswordField = document.getElementById('unlockPassword');
-            const addressSearchInput = document.getElementById('addressSearchInput');
-            
-            const passwordError = document.getElementById('passwordError');
-            const saveError = document.getElementById('saveError');
-            const unlockError = document.getElementById('unlockError');
-
-            const initialWorkspaceMessage = document.getElementById('initialWorkspaceMessage');
-            const transactionResults = document.getElementById('transactionResults');
-            const walletProfileCard = document.getElementById('walletProfileCard');
-            const profActivation = document.getElementById('profActivation');
-            const profFirstGas = document.getElementById('profFirstGas');
-            const profTopGas = document.getElementById('profTopGas');
-            const profTopGasAmount = document.getElementById('profTopGasAmount');
-            const profApprovals = document.getElementById('profApprovals');
-            const profUsdtIn = document.getElementById('profUsdtIn');
-            const profUsdtOut = document.getElementById('profUsdtOut');
-            const profEthIn = document.getElementById('profEthIn');
-            const profEthOut = document.getElementById('profEthOut');
-            const profUsdtInCount = document.getElementById('profUsdtInCount');
-            const profUsdtOutCount = document.getElementById('profUsdtOutCount');
-            const profEthInCount = document.getElementById('profEthInCount');
-            const profEthOutCount = document.getElementById('profEthOutCount');
-            const toggleTxTableBtn = document.getElementById('toggleTxTableBtn');
-
-            const txCountMessage = document.getElementById('txCountMessage');
-            const txTableBody = document.getElementById('txTableBody');
-
-            // --- 啟動路由邏輯 ---
             try {
-                hideAllScreens(); // 確保初始狀態乾淨
-                const isConfigured = await myElectronAPI.isApiKeysConfigured();
-                if (isConfigured) {
-                    console.log('API Keys configured. Showing Unlock Screen.');
-                    unlockScreen.classList.remove('hidden'); 
-                    setTimeout(() => unlockPasswordField.focus(), 100);
+                const status = await api.checkSystemStatus();
+                if (status.isConfigured) {
+                    // Not first run -> Go to Login
+                    currentUserName = status.userName;
+                    document.getElementById('displayLoginUserName').textContent = currentUserName;
+                    showScreen('screenLogin');
+                    document.getElementById('inputLoginPwd').focus();
                 } else {
-                    console.log('API Keys not configured. Starting wizard.');
-                    screen1.classList.remove('hidden');
+                    // First run -> Go to Welcome
+                    showScreen('screenWelcome');
                 }
             } catch(e) {
-                console.error("Error checking config status:", e);
-                hideAllScreens();
-                screen1.classList.remove('hidden'); 
+                console.error('Init error:', e);
+                showScreen('screenWelcome');
+            }
+        });
+
+        // --- UI 1 to UI 2 ---
+        document.getElementById('btnNextToUserSetup').addEventListener('click', () => {
+            showScreen('screenUserSetup');
+            document.getElementById('inputUserName').focus();
+        });
+
+        // --- UI 2 to UI 3 (Setup) ---
+        document.getElementById('btnBackToWelcome').addEventListener('click', () => showScreen('screenWelcome'));
+        document.getElementById('btnNextToPwdSetup').addEventListener('click', () => {
+            const name = document.getElementById('inputUserName').value.trim();
+            if (!name) {
+                document.getElementById('errUserName').classList.remove('hidden');
+                return;
+            }
+            tempUserName = name;
+            document.getElementById('displaySetupUserName').textContent = tempUserName;
+            showScreen('screenPasswordSetup');
+            document.getElementById('inputNewPwd').focus();
+        });
+
+        // --- UI 3 to UI 4 ---
+        document.getElementById('btnBackToUserSetup').addEventListener('click', () => showScreen('screenUserSetup'));
+        document.getElementById('btnNextToApiSetup').addEventListener('click', () => {
+            const p1 = document.getElementById('inputNewPwd').value;
+            const p2 = document.getElementById('inputConfirmPwd').value;
+            if (!p1 || p1 !== p2) {
+                document.getElementById('errPwdSetup').classList.remove('hidden');
+                return;
+            }
+            tempPassword = p1;
+            showScreen('screenApiSetup');
+        });
+
+        // --- API Testing Logic ---
+        document.getElementById('btnTestEtherscan').addEventListener('click', async () => {
+            const key = document.getElementById('inputEtherscanKey').value.trim();
+            const resEl = document.getElementById('resEtherscan');
+            resEl.textContent = '測試中...';
+            resEl.className = 'test-result';
+            const res = await api.testApiKey({ provider: 'etherscan', apiKey: key });
+            resEl.textContent = res.message;
+            resEl.className = res.success ? 'test-result success-message' : 'test-result error-message';
+        });
+
+        document.getElementById('btnTestTronscan').addEventListener('click', async () => {
+            const key = document.getElementById('inputTronscanKey').value.trim();
+            const resEl = document.getElementById('resTronscan');
+            resEl.textContent = '測試中...';
+            resEl.className = 'test-result';
+            const res = await api.testApiKey({ provider: 'tronscan', apiKey: key });
+            resEl.textContent = res.message;
+            resEl.className = res.success ? 'test-result success-message' : 'test-result error-message';
+        });
+
+        // --- UI 4 to UI 5 (Finish Setup) ---
+        document.getElementById('btnBackToPwdSetup').addEventListener('click', () => showScreen('screenPasswordSetup'));
+        document.getElementById('btnFinishSetup').addEventListener('click', async () => {
+            const eKey = document.getElementById('inputEtherscanKey').value.trim();
+            const tKey = document.getElementById('inputTronscanKey').value.trim();
+            const errEl = document.getElementById('errApiSetup');
+            
+            if (!eKey && !tKey) {
+                errEl.textContent = "請至少輸入一個 API Key 才能繼續。";
+                errEl.classList.remove('hidden');
+                return;
             }
 
-            // --- Onboarding 畫面切換邏輯 ---
-            nextToScreen2Button?.addEventListener('click', () => { hideAllScreens(); screen2.classList.remove('hidden'); });
-            backToScreen1Button?.addEventListener('click', () => { hideAllScreens(); screen1.classList.remove('hidden'); });
-            nextToScreen3Button?.addEventListener('click', () => { hideAllScreens(); screen3.classList.remove('hidden'); });
-            backToScreen2Button?.addEventListener('click', () => { hideAllScreens(); screen2.classList.remove('hidden'); });
-            backToScreen3Button?.addEventListener('click', () => { hideAllScreens(); screen3.classList.remove('hidden'); });
+            const apiKeys = {};
+            if (eKey) apiKeys.etherscan = eKey;
+            if (tKey) apiKeys.tronscan = tKey;
 
-            // 從畫面 3 到畫面 4，收集 keys
-            nextToScreen4Button?.addEventListener('click', () => {
-                const eKey = etherscanKeyInput.value.trim();
-                const tKey = tronscanKeyInput.value.trim();
-                
-                if (!eKey && !tKey) {
-                    alert("請至少輸入一個 API Key 才能繼續。");
-                    return;
-                }
-                temporaryApiKeys = {};
-                if (eKey) temporaryApiKeys.etherscan = eKey;
-                if (tKey) temporaryApiKeys.tronscan = tKey;
+            const btn = document.getElementById('btnFinishSetup');
+            btn.disabled = true;
+            btn.textContent = "加密設定中...";
 
-                hideAllScreens();
-                screen4.classList.remove('hidden'); 
-                setTimeout(() => masterPasswordField.focus(), 100);
-            });
+            try {
+                const res = await api.setupSystem({
+                    userName: tempUserName,
+                    masterPassword: tempPassword,
+                    apiKeys: apiKeys
+                });
 
-            // --- 測試連線邏輯 ---
-            testEtherscanButton?.addEventListener('click', async () => {
-                const apiKey = etherscanKeyInput.value.trim();
-                etherscanResult.textContent = '測試中...';
-                etherscanResult.className = 'test-result';
-                try {
-                    const result = await myElectronAPI.testApiKey({ provider: 'etherscan', apiKey });
-                    etherscanResult.textContent = result.message;
-                    etherscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
-                } catch(e) {
-                    etherscanResult.textContent = '發生內部錯誤';
-                    etherscanResult.className = 'test-result error-message';
-                }
-            });
-
-            testTronscanButton?.addEventListener('click', async () => {
-                const apiKey = tronscanKeyInput.value.trim();
-                tronscanResult.textContent = '測試中...';
-                tronscanResult.className = 'test-result';
-                try {
-                    const result = await myElectronAPI.testApiKey({ provider: 'tronscan', apiKey });
-                    tronscanResult.textContent = result.message;
-                    tronscanResult.className = result.success ? 'test-result success-message' : 'test-result error-message';
-                } catch(e) {
-                    tronscanResult.textContent = '發生內部錯誤';
-                    tronscanResult.className = 'test-result error-message';
-                }
-            });
-
-            // --- 完成設定：加密並儲存 ---
-            submitSetupButton?.addEventListener('click', async () => {
-                const masterPass = masterPasswordField.value;
-                const confirmPass = confirmMasterPasswordField.value;
-                saveError.classList.add('hidden');
-                passwordError.classList.add('hidden');
-
-                if (!masterPass || masterPass !== confirmPass) {
-                    passwordError.classList.remove('hidden');
-                    return;
-                }
-
-                if (Object.keys(temporaryApiKeys).length > 0) {
-                    submitSetupButton.disabled = true;
-                    submitSetupButton.textContent = "加密中...";
-                    try {
-                        const result = await myElectronAPI.saveApiKeys({
-                            apiKeys: temporaryApiKeys,
-                            masterPassword: masterPass
-                        });
-
-                        if (result.success) {
-                            temporaryApiKeys = {}; // Clear memory
-                            masterPasswordField.value = '';
-                            confirmMasterPasswordField.value = '';
-                            
-                            // 設定完成後，直接跳轉到「解鎖畫面」
-                            hideAllScreens();
-                            unlockScreen.classList.remove('hidden');
-                            setTimeout(() => unlockPasswordField.focus(), 100);
-                        } else {
-                            saveError.textContent = `儲存失敗: ${result.message}`;
-                            saveError.classList.remove('hidden');
-                        }
-                    } catch(e) {
-                         saveError.textContent = '發生內部錯誤，無法儲存。';
-                         saveError.classList.remove('hidden');
-                    } finally {
-                        submitSetupButton.disabled = false;
-                        submitSetupButton.textContent = "加密並完成設定";
-                    }
-                } else {
-                    saveError.textContent = '未收集到任何 API Key。';
-                    saveError.classList.remove('hidden');
-                }
-            });
-
-            // --- 解鎖邏輯 ---
-            unlockButton?.addEventListener("click", async () => {
-                const password = unlockPasswordField.value;
-                unlockError.classList.add("hidden");
-                
-                if(!password) {
-                    unlockError.textContent = "請輸入主密碼。";
-                    unlockError.classList.remove("hidden");
-                    return;
-                }
-
-                unlockButton.textContent = "解鎖中...";
-                unlockButton.disabled = true;
-
-                try {
-                    const result = await myElectronAPI.getApiKeys(password);
-                    if (result.success) {
-                        console.log("解鎖成功！API Keys 已載入記憶體。");
-                        currentLumenApiKeys = result.apiKeys; 
-                        
-                        unlockPasswordField.value = ""; 
-                        hideAllScreens();
-                        screenCaseSetup.classList.remove("hidden"); // 進入案件登錄畫面
-                        setTimeout(() => investigatorUnit.focus(), 100);
-                    } else {
-                        unlockError.textContent = "密碼錯誤或資料損壞！請重試。";
-                        unlockError.classList.remove("hidden");
-                        unlockPasswordField.value = ""; 
-                        setTimeout(() => unlockPasswordField.focus(), 100);
-                    }
-                } catch(e) {
-                    unlockError.textContent = "發生內部錯誤，無法解鎖。";
-                    unlockError.classList.remove("hidden");
-                } finally {
-                    unlockButton.textContent = "解鎖並進入系統";
-                    unlockButton.disabled = false;
-                }
-            });
-            
-            
-            // --- 案件登錄邏輯 (建立證據鏈) ---
-            startCaseButton?.addEventListener('click', () => {
-                const unit = investigatorUnit.value.trim();
-                const name = investigatorName.value.trim();
-                const caseName = caseId.value.trim();
-                const target = initialTarget.value.trim();
-
-                if (!unit || !name || !caseName) {
-                    caseSetupError.classList.remove('hidden');
-                    return;
-                }
-                
-                caseSetupError.classList.add('hidden');
-
-                // 綁定時間戳記
-                const now = new Date();
-                const timeString = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-
-                // 更新頂部常駐證據鏈資訊
-                headerCaseInfo.textContent = `案件: ${caseName} | 調查單位: ${unit} | 調查員: ${name}`;
-                headerTimeInfo.textContent = `立案時間: ${timeString}`;
-
-                // 將初始地址自動帶入下一頁的清單中
-                if (target) {
-                    knownTargets.value = target;
-                }
-
-                // 切換到「完善案件資料」畫面
-                hideAllScreens();
-                screenCaseDetails.classList.remove('hidden');
-                setTimeout(() => caseDescription.focus(), 100);
-            });
-
-            
-            // --- 完善案件資料邏輯 ---
-            backToCaseSetupButton?.addEventListener('click', () => {
-                hideAllScreens();
-                screenCaseSetup.classList.remove('hidden');
-            });
-
-            // 處理檔案上傳回饋 (純前端示意，後續串接 IPC)
-            caseFileInput?.addEventListener('change', (e) => {
-                if(e.target.files.length > 0) {
-                    const file = e.target.files[0];
-                    fileUploadStatus.textContent = `已選取: ${file.name} (大小: ${(file.size/1024).toFixed(1)} KB)。系統將於分析階段進行解析。`;
-                }
-            });
-
-            enterDashboardButton?.addEventListener('click', () => {
-                // 將 TextArea 中的第一個地址，自動填入主控台搜尋框作為起點
-                const targets = knownTargets.value.split('\n').map(s => s.trim()).filter(s => s);
-                if (targets.length > 0) {
-                    addressSearchInput.value = targets[0];
-                }
-
-                hideAllScreens();
-                mainDashboard.classList.remove('hidden');
-                
-                // 如果有初始地址，直接觸發初勘！
-                if (addressSearchInput.value) {
-                    startSearchBtn.click();
-                } else {
-                    setTimeout(() => addressSearchInput.focus(), 100);
-                }
-            });
-
-            // 允許在解鎖輸入框按 Enter 鍵解鎖
-            unlockPasswordField?.addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    unlockButton.click();
-                }
-            });
-
-            
-            // 交易明細開關邏輯
-            toggleTxTableBtn?.addEventListener('click', () => {
-                if (transactionResults.classList.contains('hidden')) {
-                    transactionResults.classList.remove('hidden');
-                    toggleTxTableBtn.textContent = '隱藏交易明細';
-                } else {
-                    transactionResults.classList.add('hidden');
-                    toggleTxTableBtn.textContent = '查閱交易明細';
-                }
-            });
-
-            // --- 主介面邏輯 (API 查詢與表格渲染) ---
-            startSearchBtn?.addEventListener('click', async () => {
-                const address = addressSearchInput.value.trim();
-                if (!address) {
-                     alert("請輸入要調查的錢包地址。");
-                     return;
-                }
-                
-                // 自動判斷地址類型
-                let targetProvider = 'etherscan'; // 預設使用 Etherscan
-                let providerName = 'Etherscan';
-                
-                if (address.startsWith('T') && address.length === 34) {
-                    targetProvider = 'tronscan';
-                    providerName = 'Tronscan';
-                } else if (address.startsWith('0x') && address.length === 42) {
-                    targetProvider = 'etherscan';
-                    providerName = 'Etherscan';
-                } else {
-                     alert("無法識別的地址格式。請確認輸入的是有效的以太坊 (0x...) 或波場 (T...) 地址。");
-                     return;
-                }
-
-                if (!currentLumenApiKeys || !currentLumenApiKeys[targetProvider]) {
-                    alert(`錯誤：未載入 ${providerName} API Key。請進入系統設定重新配置。`);
-                    return;
-                }
-
-                // UI 狀態：載入中
-                startSearchBtn.disabled = true;
-                startSearchBtn.textContent = "查詢中...";
-                initialWorkspaceMessage?.classList.add('hidden');
-                transactionResults?.classList.add('hidden');
-                walletProfileCard?.classList.add('hidden');
-                
-                // 更新標題
-                const tableTitle = document.querySelector('#transactionResults h3');
-                if (tableTitle) tableTitle.textContent = `最新交易紀錄 (${providerName})`;
-                
-                if (txTableBody) txTableBody.innerHTML = ""; // 清空表格
-                if (txCountMessage) txCountMessage.textContent = `正在向 ${providerName} 獲取資料...`;
-                
-
-                try {
-                    console.log(`Fetching transactions for ${address} via ${targetProvider}...`);
+                if (res.success) {
+                    currentUserName = tempUserName;
+                    // Setup done, move to UI 5 (Case Hub)
+                    document.getElementById('displayHubUserName').textContent = currentUserName;
+                    showScreen('screenCaseHub');
                     
-                    // 1. 同步觸發目標初勘 (Profiler) - 目前先支援 Etherscan
-                    if (targetProvider === 'etherscan') {
-                        myElectronAPI.analyzeWallet({
-                            provider: 'etherscan',
-                            address: address,
-                            apiKeys: currentLumenApiKeys
-                        }).then(profResult => {
-                            if (profResult.success) {
-                                const p = profResult.profile;
-                                profActivation.textContent = p.activation_time;
-                                profFirstGas.textContent = p.first_gas_source;
-                                profTopGas.textContent = p.top_gas_source;
-                                profTopGasAmount.textContent = `(共 ${p.top_gas_amount} ETH)`;
-                                
-                                profApprovals.textContent = p.approvals_count;
-                                if (p.approvals_count > 0) profApprovals.style.color = '#dc3545';
-                                
-                                profUsdtIn.textContent = `${p.usdt_in_vol} USDT`;
-                                profUsdtOut.textContent = `${p.usdt_out_vol} USDT`;
-                                profUsdtInCount.textContent = p.usdt_in_count;
-                                profUsdtOutCount.textContent = p.usdt_out_count;
-                                
-                                profEthIn.textContent = `${p.eth_in_vol} ETH`;
-                                profEthOut.textContent = `${p.eth_out_vol} ETH`;
-                                profEthInCount.textContent = p.eth_in_count;
-                                profEthOutCount.textContent = p.eth_out_count;
-                                
-                                                                walletProfileCard.classList.remove('hidden');
-                                document.getElementById('graphWorkspace')?.classList.remove('hidden');
-                                toggleTxTableBtn.style.display = 'block';
-                                toggleTxTableBtn.textContent = '查閱交易明細';
-                                transactionResults.classList.add('hidden');
-                            }
-                        }).catch(e => console.error("Profiling failed:", e));
-                    }
-
-                    // 2. 呼叫 IPC 後端執行一般查詢
-                    const result = await myElectronAPI.fetchTransactions({
-                        provider: targetProvider,
-                        address: address,
-                        apiKeys: currentLumenApiKeys
-                    });
-
-                    if (result.success && result.transactions) {
-                        const txs = result.transactions;
-                        if (txCountMessage) txCountMessage.textContent = `成功獲取 ${txs.length} 筆最新交易紀錄。`;
-                        
-                        if (txs.length > 0 && txTableBody) {
-                            // 動態生成表格列
-                            txs.forEach(tx => {
-                                const tr = document.createElement('tr');
-                                
-                                let timeStr = 'N/A';
-                                let hash = 'N/A';
-                                let from = 'N/A';
-                                let to = 'N/A';
-                                let valueDisplay = 'N/A';
-
-                                if (targetProvider === 'etherscan') {
-                                    const date = new Date(tx.timeStamp * 1000);
-                                    timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-                                    hash = tx.hash;
-                                    from = tx.from;
-                                    to = tx.to;
-                                    valueDisplay = `${(parseFloat(tx.value) / 1e18).toFixed(6)} ETH`;
-                                } else if (targetProvider === 'tronscan') {
-                                    const date = new Date(tx.timestamp); // Tronscan 使用毫秒
-                                    timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-                                    hash = tx.hash;
-                                    from = tx.ownerAddress; // Tronscan 欄位名稱不同
-                                    to = tx.toAddress;
-                                    // Tronscan 的 TRX 單位是 Sun (1e6)
-                                    // 這裡做個簡單判斷，如果是 TRC20 等代幣交易，可能需要解析合約資料，這裡先顯示基礎 TRX 或標示
-                                    if (tx.contractData && tx.contractData.amount) {
-                                        valueDisplay = `${(parseFloat(tx.contractData.amount) / 1e6).toFixed(6)} TRX`;
-                                    } else {
-                                        valueDisplay = 'Contract Call'; // 簡化處理
-                                    }
-                                }
-                                
-                                tr.innerHTML = `
-                                    <td>${timeStr}</td>
-                                    <td class="hash-col" title="${hash}">${hash ? hash.substring(0, 15) + '...' : 'N/A'}</td>
-                                    <td class="addr-col" title="${from}">${from ? from.substring(0, 15) + '...' : 'N/A'}</td>
-                                    <td class="addr-col" title="${to}">${to ? to.substring(0, 15) + '...' : 'N/A'}</td>
-                                    <td class="val-col">${valueDisplay}</td>
-                                `;
-                                txTableBody.appendChild(tr);
-                            });
-                        } else if (txCountMessage) {
-                            txCountMessage.textContent = "此地址無一般交易紀錄。";
-                        }
-                        
-                    } else {
-                        alert(`查詢失敗: ${result.message}`);
-                        transactionResults?.classList.add('hidden');
-                        initialWorkspaceMessage?.classList.remove('hidden');
-                    }
-
-                } catch (error) {
-                    console.error("Fetch Error:", error);
-                    alert(`發生內部錯誤: ${error.message}`);
-                    transactionResults?.classList.add('hidden');
-                    initialWorkspaceMessage?.classList.remove('hidden');
-                } finally {
-                    startSearchBtn.disabled = false;
-                    startSearchBtn.textContent = "開始追蹤";
+                    // Clear memory
+                    tempPassword = '';
+                    document.getElementById('inputNewPwd').value = '';
+                    document.getElementById('inputConfirmPwd').value = '';
+                } else {
+                    errEl.textContent = `儲存失敗: ${res.message}`;
+                    errEl.classList.remove('hidden');
                 }
-            });
+            } catch(e) {
+                errEl.textContent = "內部錯誤，無法儲存。";
+                errEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "完成設定並加密儲存";
+            }
         });
+
+        // --- UI 3 (Login) to UI 5 ---
+        document.getElementById('btnLogin').addEventListener('click', async () => {
+            const pwd = document.getElementById('inputLoginPwd').value;
+            const errEl = document.getElementById('errLogin');
+            if(!pwd) return;
+
+            const btn = document.getElementById('btnLogin');
+            btn.disabled = true;
+            btn.textContent = "解鎖中...";
+
+            try {
+                const res = await api.loginSystem(pwd);
+                if (res.success) {
+                    currentUserName = res.userName;
+                    document.getElementById('displayHubUserName').textContent = currentUserName;
+                    document.getElementById('inputLoginPwd').value = '';
+                    showScreen('screenCaseHub');
+                } else {
+                    errEl.textContent = res.message;
+                    errEl.classList.remove('hidden');
+                    document.getElementById('inputLoginPwd').value = '';
+                    document.getElementById('inputLoginPwd').focus();
+                }
+            } catch(e) {
+                errEl.textContent = "內部錯誤。";
+                errEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "解鎖並進入系統";
+            }
+        });
+
+        document.getElementById('inputLoginPwd').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('btnLogin').click();
+        });
+
+        // --- UI 5: Case Hub Actions (Placeholders for UI 6) ---
+        document.getElementById('btnCreateCase').addEventListener('click', () => {
+            alert(`[開發中]
+調查員 ${currentUserName} 您好，系統已收到「建立案件」指令。
+即將導向 UI 6 (案件資料工作區)...`);
+        });
+
+        document.getElementById('btnImportEdit').addEventListener('click', () => {
+            alert(`[開發中]
+即將開啟檔案選擇器，導入既有案件並進入編輯模式 (UI 6)...`);
+        });
+
     </script>
 </body>
 </html>
