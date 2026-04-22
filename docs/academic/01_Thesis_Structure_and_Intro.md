@@ -36,6 +36,22 @@
 
             **總結：**
             區塊鏈交易資料應被視為「分散式存儲的數位證據」。透過嚴謹的採證行為，將鏈上資料抓取並存入受監管的數位儲存媒體後，它便完全適用於現行 SOP 中關於「邏輯性資料」與「證據監管鏈要求」的規範。LumenTracker 的設計正是在此基礎上，透過其「全程操作同步驗證」、「證據同一性雜湊封裝」及「法庭展演模式」等功能，來強化這些分散式數位證據的司法效力與可呈堂性。
+        *   2.2.2 基於 ISO/IEC 27037 實踐 ARRJ 原則之數位證據規範化 (Normalizing Digital Evidence based on ISO/IEC 27037 and ARRJ Principles)
+
+            在探討區塊鏈與數位證據的交集後，確保這些數位證據在法庭上的證據能力與證明力，必須建立在堅實的科學證據理論基礎上。在數位鑑識科學領域，**ISO/IEC 27037** 提供了數位證據處理的「標準程序（Procedure）」，而 **ARRJ 原則** 則提供了衡量這些程序品質的「科學指標（Metrics）」。兩者的結合，為本研究（如 LumenTracker 的設計）提供了無可辯駁的法學與鑑識科學基礎。
+
+            **一、 ARRJ 原則與 ISO 27037 之鏈結與實踐：**
+            ARRJ 是數位鑑識科學中衡量程序品質的黃金標準，其包含可稽核性 (Auditability)、可重現性 (Reproducibility)、可重複性 (Repeatability) 與正當性 (Justifiability)。
+
+            1.  **可稽核性 (Auditability) 與監管鏈 (Chain of Custody)：** ISO 27037 強調數位證據必須具備完整的監管鏈記錄。在實務上，這對應了 ARRJ 中的 Auditability，證明證據從獲取 (Acquisition) 到法庭呈現期間，無任何未經授權的接觸，從而確保證據的真實性 (Authenticity)。
+            2.  **可重現性 (Reproducibility) 與工具確證 (Tool Validation)：** 鑑識程序的重現性要求使用經確證的工具，並能進行跨方法驗證。遵循 ISO 標準代表著，即使第一線反應人員 (DEFR) 或鑑識專家更換不同的分析軟體，依然能得出相同的區塊鏈金流結果，從而排除工具偏誤。
+            3.  **可重複性 (Repeatability) 與數據完整性 (Integrity)：** 在相同條件下重複測試必須獲得一致結果。透過映像檔製作與 Hash 值比對 (如 MD5, SHA-256)，確保原始數據在採證過程中未受汙染，維護了證據的完整性。
+            4.  **正當性 (Justifiability) 與標準作業程序 (SOP)：** 識別、收集、取得、保存的過程必須符合標準化作業程序。這證明了採證手段符合「比例原則」與「法定程序」，能有效對抗辯方關於不正取證的爭議。在台灣刑事訴訟法第 158-4 條（權衡理論）的框架下，符合國際 ISO 標準的採證，將大幅增加證據在法律利益衡量上被採納的機會。
+
+            **二、 針對「詐欺犯罪」與「區塊鏈」的延伸應用與貢獻：**
+            區塊鏈與虛擬貨幣流向追蹤面臨獨特挑戰：虛擬貨幣交易所的 API 回傳資料或鏈上探測器（如 LumenTracker）的結果具有動態性質，如何滿足「可重現性」與「正當性」？
+            本研究提議，在處理此類動態分散式數據時，應將 ISO 27037 的「識別 (Identification)」與「取得 (Acquisition)」階段進行擴充。具體而言，取證過程必須強制包含精確的「時間戳記（Timestamp）」與「API 來源/版本記錄」。LumenTracker 透過「案件沙盒」與「常駐證據鏈標頭」強制綁定調查員身分與取證時間，正是為了將動態的區塊鏈 API 查詢，固化為符合 ARRJ Justifiability 標準的靜態證據，為第一線人員提供一套符合國際規範的鑑識工具指引。
+
     *   2.3 Application Potential of Serverless Architecture in Forensics (無伺服器架構在鑑識領域的應用潛力)
     *   2.4 Forensic Science and Visual Presentation (鑑識科學與視覺化呈現)
 *   **3. Research Questions and Goals (研究問題與目標)**
