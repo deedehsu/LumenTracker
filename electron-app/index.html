@@ -261,9 +261,13 @@
                 </div>
                 
                 
-                <!-- 初勘側寫卡片 (預設隱藏) -->
+                
+                <!-- 初勘側寫卡片 (修改為常駐顯示) -->
                 <div id="walletProfileCard" class="hidden" style="width: 100%; margin-bottom: 20px; background-color: #f8f9fa; border-left: 5px solid #007bff; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 15px; box-sizing: border-box;">
-                    <h3 style="margin-top: 0; color: #007bff; border-bottom: 1px solid #dee2e6; padding-bottom: 8px;">📊 目標初勘 (Target Profiling)</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #dee2e6; padding-bottom: 8px; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #007bff;">📊 目標初勘 (Target Profiling)</h3>
+                        <button id="toggleTxTableBtn" class="button secondary" style="padding: 5px 15px; font-size: 0.9em; display: none;">查閱交易明細</button>
+                    </div>
                     <div style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 0.9em;">
                         <div style="flex: 1; min-width: 250px;">
                             <p><strong>🕒 錢包啟用時間:</strong> <span id="profActivation">載入中...</span></p>
@@ -279,6 +283,12 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 關聯分析圖表區 (預留) -->
+                <div id="graphWorkspace" class="hidden" style="width: 100%; height: 400px; background-color: #fcfcfc; border: 1px dashed #ccc; border-radius: 4px; display: flex; justify-content: center; align-items: center; color: #888; font-size: 1.2em; margin-bottom: 20px;">
+                    [涉案幣流關聯圖 (Visual Graph) - 待開發]
+                </div>
+
 
                 <!-- 交易結果表格 (預設隱藏) -->
                 <div id="transactionResults" class="hidden" style="width: 100%;">
@@ -403,6 +413,7 @@
             const profUsdtOutCount = document.getElementById('profUsdtOutCount');
             const profEthInCount = document.getElementById('profEthInCount');
             const profEthOutCount = document.getElementById('profEthOutCount');
+            const toggleTxTableBtn = document.getElementById('toggleTxTableBtn');
 
             const txCountMessage = document.getElementById('txCountMessage');
             const txTableBody = document.getElementById('txTableBody');
@@ -639,6 +650,18 @@
                 }
             });
 
+            
+            // 交易明細開關邏輯
+            toggleTxTableBtn?.addEventListener('click', () => {
+                if (transactionResults.classList.contains('hidden')) {
+                    transactionResults.classList.remove('hidden');
+                    toggleTxTableBtn.textContent = '隱藏交易明細';
+                } else {
+                    transactionResults.classList.add('hidden');
+                    toggleTxTableBtn.textContent = '查閱交易明細';
+                }
+            });
+
             // --- 主介面邏輯 (API 查詢與表格渲染) ---
             startSearchBtn?.addEventListener('click', async () => {
                 const address = addressSearchInput.value.trim();
@@ -680,7 +703,7 @@
                 
                 if (txTableBody) txTableBody.innerHTML = ""; // 清空表格
                 if (txCountMessage) txCountMessage.textContent = `正在向 ${providerName} 獲取資料...`;
-                transactionResults?.classList.remove('hidden'); // 顯示骨架，等待資料
+                
 
                 try {
                     console.log(`Fetching transactions for ${address} via ${targetProvider}...`);
@@ -712,7 +735,11 @@
                                 profEthInCount.textContent = p.eth_in_count;
                                 profEthOutCount.textContent = p.eth_out_count;
                                 
-                                walletProfileCard.classList.remove('hidden');
+                                                                walletProfileCard.classList.remove('hidden');
+                                document.getElementById('graphWorkspace')?.classList.remove('hidden');
+                                toggleTxTableBtn.style.display = 'block';
+                                toggleTxTableBtn.textContent = '查閱交易明細';
+                                transactionResults.classList.add('hidden');
                             }
                         }).catch(e => console.error("Profiling failed:", e));
                     }
