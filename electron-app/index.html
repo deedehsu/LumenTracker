@@ -217,7 +217,7 @@
                                     <th class="hash-col">交易 Hash (TxHash)</th>
                                     <th class="addr-col">發送方 (From)</th>
                                     <th class="addr-col">接收方 (To)</th>
-                                    <th class="val-col">金額 (Value in ETH)</th>
+                                    <th class="val-col">金額 (Value)</th>
                                 </tr>
                             </thead>
                             <tbody id="txTableBody">
@@ -471,8 +471,23 @@
                      return;
                 }
                 
-                if (!currentLumenApiKeys || !currentLumenApiKeys.etherscan) {
-                    alert("錯誤：未載入 Etherscan API Key。請重新解鎖系統或重新配置。");
+                // 自動判斷地址類型
+                let targetProvider = 'etherscan'; // 預設使用 Etherscan
+                let providerName = 'Etherscan';
+                
+                if (address.startsWith('T') && address.length === 34) {
+                    targetProvider = 'tronscan';
+                    providerName = 'Tronscan';
+                } else if (address.startsWith('0x') && address.length === 42) {
+                    targetProvider = 'etherscan';
+                    providerName = 'Etherscan';
+                } else {
+                     alert("無法識別的地址格式。請確認輸入的是有效的以太坊 (0x...) 或波場 (T...) 地址。");
+                     return;
+                }
+
+                if (!currentLumenApiKeys || !currentLumenApiKeys[targetProvider]) {
+                    alert(`錯誤：未載入 ${providerName} API Key。請進入系統設定重新配置。`);
                     return;
                 }
 
@@ -481,15 +496,20 @@
                 startSearchBtn.textContent = "查詢中...";
                 initialWorkspaceMessage?.classList.add('hidden');
                 transactionResults?.classList.add('hidden');
+                
+                // 更新標題
+                const tableTitle = document.querySelector('#transactionResults h3');
+                if (tableTitle) tableTitle.textContent = `最新交易紀錄 (${providerName})`;
+                
                 if (txTableBody) txTableBody.innerHTML = ""; // 清空表格
-                if (txCountMessage) txCountMessage.textContent = "正在向 Etherscan 獲取資料...";
+                if (txCountMessage) txCountMessage.textContent = `正在向 ${providerName} 獲取資料...`;
                 transactionResults?.classList.remove('hidden'); // 顯示骨架，等待資料
 
                 try {
-                    console.log(`Fetching transactions for ${address}...`);
+                    console.log(`Fetching transactions for ${address} via ${targetProvider}...`);
                     // 呼叫 IPC 後端執行查詢
                     const result = await myElectronAPI.fetchTransactions({
-                        provider: 'etherscan',
+                        provider: targetProvider,
                         address: address,
                         apiKeys: currentLumenApiKeys
                     });
@@ -502,19 +522,41 @@
                             // 動態生成表格列
                             txs.forEach(tx => {
                                 const tr = document.createElement('tr');
-                                // 轉換 Unix Timestamp
-                                const date = new Date(tx.timeStamp * 1000);
-                                const timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
                                 
-                                // Wei 轉換為 ETH
-                                const ethValue = (parseFloat(tx.value) / 1e18).toFixed(6);
+                                let timeStr = 'N/A';
+                                let hash = 'N/A';
+                                let from = 'N/A';
+                                let to = 'N/A';
+                                let valueDisplay = 'N/A';
 
+                                if (targetProvider === 'etherscan') {
+                                    const date = new Date(tx.timeStamp * 1000);
+                                    timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                                    hash = tx.hash;
+                                    from = tx.from;
+                                    to = tx.to;
+                                    valueDisplay = `${(parseFloat(tx.value) / 1e18).toFixed(6)} ETH`;
+                                } else if (targetProvider === 'tronscan') {
+                                    const date = new Date(tx.timestamp); // Tronscan 使用毫秒
+                                    timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                                    hash = tx.hash;
+                                    from = tx.ownerAddress; // Tronscan 欄位名稱不同
+                                    to = tx.toAddress;
+                                    // Tronscan 的 TRX 單位是 Sun (1e6)
+                                    // 這裡做個簡單判斷，如果是 TRC20 等代幣交易，可能需要解析合約資料，這裡先顯示基礎 TRX 或標示
+                                    if (tx.contractData && tx.contractData.amount) {
+                                        valueDisplay = `${(parseFloat(tx.contractData.amount) / 1e6).toFixed(6)} TRX`;
+                                    } else {
+                                        valueDisplay = 'Contract Call'; // 簡化處理
+                                    }
+                                }
+                                
                                 tr.innerHTML = `
                                     <td>${timeStr}</td>
-                                    <td class="hash-col" title="${tx.hash}">${tx.hash.substring(0, 15)}...</td>
-                                    <td class="addr-col" title="${tx.from}">${tx.from.substring(0, 15)}...</td>
-                                    <td class="addr-col" title="${tx.to}">${tx.to.substring(0, 15)}...</td>
-                                    <td class="val-col">${ethValue} ETH</td>
+                                    <td class="hash-col" title="${hash}">${hash ? hash.substring(0, 15) + '...' : 'N/A'}</td>
+                                    <td class="addr-col" title="${from}">${from ? from.substring(0, 15) + '...' : 'N/A'}</td>
+                                    <td class="addr-col" title="${to}">${to ? to.substring(0, 15) + '...' : 'N/A'}</td>
+                                    <td class="val-col">${valueDisplay}</td>
                                 `;
                                 txTableBody.appendChild(tr);
                             });

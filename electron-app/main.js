@@ -92,6 +92,31 @@ async function testTronscanApiKey(apiKey) {
 }
 
 
+async function fetchTronscanTransactions(apiKey, address) {
+    const TRONSCAN_API_URL = 'https://apilist.tronscanapi.com/api/transaction';
+    try {
+        const response = await axios.get(TRONSCAN_API_URL, {
+            params: {
+                sort: '-timestamp',
+                count: true,
+                limit: 50,
+                start: 0,
+                address: address
+            },
+            headers: { 'TRON-PRO-API-KEY': apiKey }
+        });
+
+        if (response.data && response.data.data) {
+            return { success: true, transactions: response.data.data, provider: 'tronscan' };
+        }
+        return { success: false, message: '收到未預期的 Tronscan API 響應格式。' };
+
+    } catch (error) {
+        console.error('Error fetching Tronscan transactions:', error.message);
+        return { success: false, message: `查詢失敗 (網路或伺服器錯誤): ${error.message}` };
+    }
+}
+
 // --- API 查詢模組 (核心分析功能) ---
 
 async function fetchEtherscanTransactions(apiKey, address) {
@@ -196,7 +221,12 @@ app.whenReady().then(async () => {
               if (!apiKeys || !apiKeys.etherscan) return { success: false, message: '未配置 Etherscan API Key。' };
               return fetchEtherscanTransactions(apiKeys.etherscan, address);
           }
-          // 未來在這裡加入 tronscan 的查詢邏輯
+          
+          if (provider === 'tronscan') {
+              if (!apiKeys || !apiKeys.tronscan) return { success: false, message: '未配置 Tronscan API Key。' };
+              return fetchTronscanTransactions(apiKeys.tronscan, address);
+          }
+          
           return { success: false, message: `尚未支援 ${provider} 的查詢。` };
       });
 
