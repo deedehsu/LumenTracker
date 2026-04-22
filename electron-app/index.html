@@ -229,6 +229,26 @@
                     <p>請在上方的搜尋列輸入目標，開始查詢交易紀錄。</p>
                 </div>
                 
+                
+                <!-- 初勘側寫卡片 (預設隱藏) -->
+                <div id="walletProfileCard" class="hidden" style="width: 100%; margin-bottom: 20px; background-color: #f8f9fa; border-left: 5px solid #007bff; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 15px; box-sizing: border-box;">
+                    <h3 style="margin-top: 0; color: #007bff; border-bottom: 1px solid #dee2e6; padding-bottom: 8px;">📊 目標初勘 (Target Profiling)</h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 0.9em;">
+                        <div style="flex: 1; min-width: 250px;">
+                            <p><strong>🕒 錢包啟用時間:</strong> <span id="profActivation">載入中...</span></p>
+                            <p><strong>⛽ 啟動手續費來源:</strong> <span id="profFirstGas" style="font-family: monospace; color: #d32f2f;">載入中...</span></p>
+                            <p><strong>⛽ 最大手續費來源:</strong> <span id="profTopGas" style="font-family: monospace; color: #d32f2f;">載入中...</span> <span id="profTopGasAmount" style="color: #666; font-size: 0.9em;"></span></p>
+                            <p><strong>⚠️ 洗錢合約授權 (Approve) 次數:</strong> <span id="profApprovals" style="font-weight: bold;">載入中...</span></p>
+                        </div>
+                        <div style="flex: 1; min-width: 250px;">
+                            <p><strong>📥 USDT 總收入:</strong> <span id="profUsdtIn" style="color: #28a745; font-weight: bold;">載入中...</span> (<span id="profUsdtInCount">0</span> 筆)</p>
+                            <p><strong>📤 USDT 總轉出:</strong> <span id="profUsdtOut" style="color: #dc3545; font-weight: bold;">載入中...</span> (<span id="profUsdtOutCount">0</span> 筆)</p>
+                            <p><strong>📥 ETH 總收入:</strong> <span id="profEthIn">載入中...</span> (<span id="profEthInCount">0</span> 筆)</p>
+                            <p><strong>📤 ETH 總轉出:</strong> <span id="profEthOut">載入中...</span> (<span id="profEthOutCount">0</span> 筆)</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 交易結果表格 (預設隱藏) -->
                 <div id="transactionResults" class="hidden" style="width: 100%;">
                     <h3 style="color: #333; margin-top: 0; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">最新交易紀錄 (Etherscan)</h3>
@@ -331,6 +351,21 @@
 
             const initialWorkspaceMessage = document.getElementById('initialWorkspaceMessage');
             const transactionResults = document.getElementById('transactionResults');
+            const walletProfileCard = document.getElementById('walletProfileCard');
+            const profActivation = document.getElementById('profActivation');
+            const profFirstGas = document.getElementById('profFirstGas');
+            const profTopGas = document.getElementById('profTopGas');
+            const profTopGasAmount = document.getElementById('profTopGasAmount');
+            const profApprovals = document.getElementById('profApprovals');
+            const profUsdtIn = document.getElementById('profUsdtIn');
+            const profUsdtOut = document.getElementById('profUsdtOut');
+            const profEthIn = document.getElementById('profEthIn');
+            const profEthOut = document.getElementById('profEthOut');
+            const profUsdtInCount = document.getElementById('profUsdtInCount');
+            const profUsdtOutCount = document.getElementById('profUsdtOutCount');
+            const profEthInCount = document.getElementById('profEthInCount');
+            const profEthOutCount = document.getElementById('profEthOutCount');
+
             const txCountMessage = document.getElementById('txCountMessage');
             const txTableBody = document.getElementById('txTableBody');
 
@@ -568,6 +603,7 @@
                 startSearchBtn.textContent = "查詢中...";
                 initialWorkspaceMessage?.classList.add('hidden');
                 transactionResults?.classList.add('hidden');
+                walletProfileCard?.classList.add('hidden');
                 
                 // 更新標題
                 const tableTitle = document.querySelector('#transactionResults h3');
@@ -579,7 +615,40 @@
 
                 try {
                     console.log(`Fetching transactions for ${address} via ${targetProvider}...`);
-                    // 呼叫 IPC 後端執行查詢
+                    
+                    // 1. 同步觸發目標初勘 (Profiler) - 目前先支援 Etherscan
+                    if (targetProvider === 'etherscan') {
+                        myElectronAPI.analyzeWallet({
+                            provider: 'etherscan',
+                            address: address,
+                            apiKeys: currentLumenApiKeys
+                        }).then(profResult => {
+                            if (profResult.success) {
+                                const p = profResult.profile;
+                                profActivation.textContent = p.activation_time;
+                                profFirstGas.textContent = p.first_gas_source;
+                                profTopGas.textContent = p.top_gas_source;
+                                profTopGasAmount.textContent = `(共 ${p.top_gas_amount} ETH)`;
+                                
+                                profApprovals.textContent = p.approvals_count;
+                                if (p.approvals_count > 0) profApprovals.style.color = '#dc3545';
+                                
+                                profUsdtIn.textContent = `${p.usdt_in_vol} USDT`;
+                                profUsdtOut.textContent = `${p.usdt_out_vol} USDT`;
+                                profUsdtInCount.textContent = p.usdt_in_count;
+                                profUsdtOutCount.textContent = p.usdt_out_count;
+                                
+                                profEthIn.textContent = `${p.eth_in_vol} ETH`;
+                                profEthOut.textContent = `${p.eth_out_vol} ETH`;
+                                profEthInCount.textContent = p.eth_in_count;
+                                profEthOutCount.textContent = p.eth_out_count;
+                                
+                                walletProfileCard.classList.remove('hidden');
+                            }
+                        }).catch(e => console.error("Profiling failed:", e));
+                    }
+
+                    // 2. 呼叫 IPC 後端執行一般查詢
                     const result = await myElectronAPI.fetchTransactions({
                         provider: targetProvider,
                         address: address,

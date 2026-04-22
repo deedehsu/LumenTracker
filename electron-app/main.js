@@ -91,6 +91,95 @@ async function testTronscanApiKey(apiKey) {
     }
 }
 
+// --- 錢包初勘模組 (Wallet Profiling) ---
+
+async function analyzeWalletEtherscan(apiKey, address) {
+    try {
+        // 1. Get Normal Txs
+        const normalRes = await axios.get('https://api.etherscan.io/v2/api', {
+            params: { chainid: 1, module: 'account', action: 'txlist', address: address, startblock: 0, endblock: 99999999, sort: 'asc', apikey: apiKey }
+        });
+        const normalTxs = Array.isArray(normalRes.data.result) ? normalRes.data.result : [];
+        
+        let firstTx = normalTxs.length > 0 ? normalTxs[0] : null;
+        let ethInCount = 0, ethOutCount = 0;
+        let ethInVol = 0, ethOutVol = 0;
+        let gasSources = {};
+        let approvals = 0;
+
+        for (const tx of normalTxs) {
+            const toAddr = tx.to || '';
+            const fromAddr = tx.from || '';
+            
+            if (toAddr.toLowerCase() === address.toLowerCase()) {
+                ethInCount++;
+                ethInVol += parseFloat(tx.value);
+                gasSources[fromAddr] = (gasSources[fromAddr] || 0) + parseFloat(tx.value);
+            } else if (fromAddr.toLowerCase() === address.toLowerCase()) {
+                ethOutCount++;
+                ethOutVol += parseFloat(tx.value);
+                if (tx.input && tx.input.startsWith('0x095ea7b3')) approvals++;
+            }
+        }
+        
+        let topGasSource = null;
+        let maxGas = 0;
+        for (const [addr, val] of Object.entries(gasSources)) {
+            if (val > maxGas) { maxGas = val; topGasSource = addr; }
+        }
+
+        // 2. Get Token Txs
+        const tokenRes = await axios.get('https://api.etherscan.io/v2/api', {
+            params: { chainid: 1, module: 'account', action: 'tokentx', address: address, startblock: 0, endblock: 99999999, sort: 'asc', apikey: apiKey }
+        });
+        const tokenTxs = Array.isArray(tokenRes.data.result) ? tokenRes.data.result : [];
+        
+        let usdtInCount = 0, usdtOutCount = 0;
+        let usdtInVol = 0, usdtOutVol = 0;
+
+        for (const tx of tokenTxs) {
+            if (tx.tokenSymbol === 'USDT') {
+                const toAddr = tx.to || '';
+                const fromAddr = tx.from || '';
+                if (toAddr.toLowerCase() === address.toLowerCase()) {
+                    usdtInCount++;
+                    usdtInVol += parseFloat(tx.value);
+                } else if (fromAddr.toLowerCase() === address.toLowerCase()) {
+                    usdtOutCount++;
+                    usdtOutVol += parseFloat(tx.value);
+                }
+            }
+        }
+
+        return {
+            success: true,
+            provider: 'Etherscan',
+            profile: {
+                activation_time: firstTx ? new Date(firstTx.timeStamp * 1000).toLocaleString() : '無紀錄',
+                first_gas_source: firstTx ? firstTx.from : '無',
+                eth_in_count: ethInCount,
+                eth_out_count: ethOutCount,
+                eth_in_vol: (ethInVol / 1e18).toFixed(6),
+                eth_out_vol: (ethOutVol / 1e18).toFixed(6),
+                usdt_in_count: usdtInCount,
+                usdt_out_count: usdtOutCount,
+                usdt_in_vol: (usdtInVol / 1e6).toFixed(2),
+                usdt_out_vol: (usdtOutVol / 1e6).toFixed(2),
+                top_gas_source: topGasSource || '無',
+                top_gas_amount: (maxGas / 1e18).toFixed(6),
+                approvals_count: approvals,
+                total_normal_txs: normalTxs.length,
+                total_token_txs: tokenTxs.length
+            }
+        };
+
+    } catch (error) {
+        console.error('Error analyzing wallet:', error.message);
+        return { success: false, message: `初勘失敗: ${error.message}` };
+    }
+}
+
+// --- API 查詢模組 (核心分析功能) ---
 
 async function fetchTronscanTransactions(apiKey, address) {
     const TRONSCAN_API_URL = 'https://apilist.tronscanapi.com/api/transaction';
@@ -216,18 +305,23 @@ app.whenReady().then(async () => {
       });
 
       ipcMain.handle('fetch-transactions', async (event, { provider, address, apiKeys }) => {
-          // apiKeys 是從前端解密後傳過來的 { etherscan: '...', tronscan: '...' }
           if (provider === 'etherscan') {
               if (!apiKeys || !apiKeys.etherscan) return { success: false, message: '未配置 Etherscan API Key。' };
               return fetchEtherscanTransactions(apiKeys.etherscan, address);
           }
-          
           if (provider === 'tronscan') {
               if (!apiKeys || !apiKeys.tronscan) return { success: false, message: '未配置 Tronscan API Key。' };
               return fetchTronscanTransactions(apiKeys.tronscan, address);
           }
-          
           return { success: false, message: `尚未支援 ${provider} 的查詢。` };
+      });
+
+      ipcMain.handle('analyze-wallet', async (event, { provider, address, apiKeys }) => {
+          if (provider === 'etherscan') {
+              if (!apiKeys || !apiKeys.etherscan) return { success: false, message: '未配置 Etherscan API Key。' };
+              return analyzeWalletEtherscan(apiKeys.etherscan, address);
+          }
+          return { success: false, message: `尚未支援 ${provider} 的初勘。` };
       });
 
       createWindow();
