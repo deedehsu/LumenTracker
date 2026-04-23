@@ -468,6 +468,96 @@
 即將開啟檔案選擇器，導入既有案件並進入編輯模式 (UI 6)...`);
         });
 
+
+        // --- UI 6: Case Workspace Add Logic ---
+        let caseWallets = [];
+        let caseTransactions = [];
+
+        document.getElementById('wsBtnAddWallet')?.addEventListener('click', () => {
+            const addr = document.getElementById('wsWalletAddr').value.trim();
+            const note = document.getElementById('wsWalletNote').value.trim();
+            if (!addr) { alert("請輸入錢包地址！"); return; }
+            caseWallets.push({ address: addr, note: note });
+            renderWalletTable();
+            document.getElementById('wsWalletAddr').value = '';
+            document.getElementById('wsWalletNote').value = '';
+        });
+
+        function renderWalletTable() {
+            const tbody = document.getElementById('wsWalletTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            if(caseWallets.length === 0) {
+                tbody.innerHTML = '<tr id="wsWalletEmptyRow"><td colspan="3" style="text-align: center; color: #999; padding: 15px;">尚無錢包紀錄</td></tr>';
+                return;
+            }
+            caseWallets.forEach((w, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="border: 1px solid #ddd; padding: 8px; font-family: monospace;">${w.address}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${w.note}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
+                        <button onclick="window.removeWallet(${index})" style="background:none; border:none; color:#dc3545; cursor:pointer; font-weight:bold;">刪除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        window.removeWallet = function(index) { caseWallets.splice(index, 1); renderWalletTable(); };
+
+        document.getElementById('wsBtnAddTx')?.addEventListener('click', () => {
+            const date = document.getElementById('wsTxDate').value;
+            const time = document.getElementById('wsTxTime').value;
+            const from = document.getElementById('wsTxFrom').value.trim();
+            const to = document.getElementById('wsTxTo').value.trim();
+            const twdStr = document.getElementById('wsTxTwd').value;
+            const cryptoStr = document.getElementById('wsTxCrypto').value;
+
+            if (!date || !twdStr || !cryptoStr) {
+                alert("請至少填寫日期、臺幣金額與幣種數量！");
+                return;
+            }
+
+            const twd = parseFloat(twdStr);
+            const crypto = parseFloat(cryptoStr);
+            const txRate = (crypto > 0) ? (twd / crypto).toFixed(2) : "0.00";
+            const dailyRate = "待計算..."; 
+
+            caseTransactions.push({
+                date, time, from, to, twd, crypto, txRate, dailyRate
+            });
+            renderTxTable();
+            document.getElementById('wsTxTwd').value = '';
+            document.getElementById('wsTxCrypto').value = '';
+        });
+
+        function renderTxTable() {
+            const tbody = document.getElementById('wsTxTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            if(caseTransactions.length === 0) {
+                tbody.innerHTML = '<tr id="wsTxEmptyRow"><td colspan="8" style="text-align: center; color: #999; padding: 15px;">尚無交易紀錄</td></tr>';
+                return;
+            }
+            caseTransactions.forEach((tx, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="border: 1px solid #ddd; padding: 8px;">${tx.date} ${tx.time}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; font-family: monospace;">${tx.from ? tx.from.substring(0,12)+'...' : ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; font-family: monospace;">${tx.to ? tx.to.substring(0,12)+'...' : ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${tx.twd.toLocaleString()}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${tx.crypto}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; color: #007bff; font-weight: bold;">${tx.txRate}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; color: #28a745;">${tx.dailyRate}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
+                        <button onclick="window.removeTx(${index})" style="background:none; border:none; color:#dc3545; cursor:pointer; font-weight:bold;">刪除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        window.removeTx = function(index) { caseTransactions.splice(index, 1); renderTxTable(); };
+
     </script>
 </body>
 </html>
