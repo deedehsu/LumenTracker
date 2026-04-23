@@ -458,10 +458,9 @@
         });
 
         // --- UI 5: Case Hub Actions (Placeholders for UI 6) ---
-        document.getElementById('btnCreateCase').addEventListener('click', () => {
-            alert(`[開發中]
-調查員 ${currentUserName} 您好，系統已收到「建立案件」指令。
-即將導向 UI 6 (案件資料工作區)...`);
+                document.getElementById('btnCreateCase').addEventListener('click', () => {
+            document.getElementById('wsInvestigatorInfo').textContent = `調查員: ${currentUserProfile.unit} | ${currentUserProfile.title} ${currentUserProfile.name}`;
+            showScreen('screenCaseWorkspace');
         });
 
         document.getElementById('btnImportEdit').addEventListener('click', () => {
