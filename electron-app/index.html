@@ -746,33 +746,29 @@
         });
 
         
-        // --- UI 7: Tabs Logic ---
-        document.getElementById('tabNodeProfile')?.addEventListener('click', function() {
-            this.style.color = '#007bff';
-            this.style.borderBottom = '3px solid #007bff';
-            this.style.background = '#fff';
+        // --- UI 7: Tabs Logic (Green Box) ---
+        document.getElementById('tabApiTxs')?.addEventListener('click', function() {
+            this.style.color = '#fff';
+            this.style.backgroundColor = '#27ae60';
             
-            const tabRecon = document.getElementById('tabRecon');
-            tabRecon.style.color = '#666';
-            tabRecon.style.borderBottom = '3px solid transparent';
-            tabRecon.style.background = 'transparent';
+            const tabVictim = document.getElementById('tabVictimTxs');
+            tabVictim.style.color = '#666';
+            tabVictim.style.backgroundColor = '#e9ecef';
             
-            document.getElementById('contentNodeProfile').style.display = 'block';
-            document.getElementById('contentRecon').style.display = 'none';
+            document.getElementById('contentApiTxs').style.display = 'block';
+            document.getElementById('contentVictimTxs').style.display = 'none';
         });
 
-        document.getElementById('tabRecon')?.addEventListener('click', function() {
-            this.style.color = '#007bff';
-            this.style.borderBottom = '3px solid #007bff';
-            this.style.background = '#fff';
+        document.getElementById('tabVictimTxs')?.addEventListener('click', function() {
+            this.style.color = '#fff';
+            this.style.backgroundColor = '#27ae60';
             
-            const tabNode = document.getElementById('tabNodeProfile');
-            tabNode.style.color = '#666';
-            tabNode.style.borderBottom = '3px solid transparent';
-            tabNode.style.background = 'transparent';
+            const tabApi = document.getElementById('tabApiTxs');
+            tabApi.style.color = '#666';
+            tabApi.style.backgroundColor = '#e9ecef';
             
-            document.getElementById('contentNodeProfile').style.display = 'none';
-            document.getElementById('contentRecon').style.display = 'block';
+            document.getElementById('contentApiTxs').style.display = 'none';
+            document.getElementById('contentVictimTxs').style.display = 'block';
         });
 
         // 畫布點擊節點邏輯更新
@@ -843,25 +839,27 @@
             cy.on('tap', 'node', function(evt){
                 var node = evt.target;
                 
-                // 切換到剖析頁籤
-                document.getElementById('tabNodeProfile').click();
+                // 點擊節點後更新黃框與綠框
+                document.getElementById('tabApiTxs').click();
                 document.getElementById('panelNodeEmpty').style.display = 'none';
                 document.getElementById('panelNodeData').style.display = 'block';
+                document.getElementById('panelTxsEmpty').style.display = 'none';
+                document.getElementById('panelNodeTxs').style.display = 'block';
                 
                 if(node.id() === 'victim') {
                     document.getElementById('panelNodeAddress').textContent = "報案中心 / 被害人";
                     document.getElementById('panelNodeAct').textContent = "N/A";
                     document.getElementById('panelNodeGas').textContent = "N/A";
                     document.getElementById('panelNodeApprove').textContent = "N/A";
-                    document.getElementById('panelNodeTxs').innerHTML = "此為虛擬節點，請點擊其他真實錢包地址進行 API 分析。";
+                    document.getElementById('panelNodeTxs').innerHTML = "<div style='text-align:center; padding: 20px; color: #888;'>此為系統虛擬節點。<br>請點擊下方畫布中的真實錢包地址，進行 API 資料調閱。</div>";
                     return;
                 }
 
                 document.getElementById('panelNodeAddress').textContent = node.id();
-                document.getElementById('panelNodeAct').textContent = "掃描 API 中...";
-                document.getElementById('panelNodeGas').textContent = "掃描 API 中...";
-                document.getElementById('panelNodeApprove').textContent = "掃描 API 中...";
-                document.getElementById('panelNodeTxs').innerHTML = "正在調閱區塊鏈交易紀錄...";
+                document.getElementById('panelNodeAct').textContent = "掃描中...";
+                document.getElementById('panelNodeGas').textContent = "掃描中...";
+                document.getElementById('panelNodeApprove').textContent = "掃描中...";
+                document.getElementById('panelNodeTxs').innerHTML = "<div style='text-align:center; padding: 20px; color: #888;'>正在向區塊鏈節點調閱歷史交易紀錄...<br>⏳</div>";
                 
                 // TODO: 將在此處串接 API
             });
