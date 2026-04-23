@@ -2,7 +2,9 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>LumenTracker</title>
+        <title>LumenTracker</title>
+    <!-- Cytoscape.js for graph visualization -->
+    <script src="../node_modules/cytoscape/dist/cytoscape.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
         .container { background-color: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 700px; width: 90%; text-align: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
@@ -284,7 +286,7 @@
 
         // Helper: Hide all screens
         function hideAllScreens() {
-            const screens = ['screenWelcome', 'screenUserSetup', 'screenPasswordSetup', 'screenApiSetup', 'screenLogin', 'screenCaseHub', 'screenCaseWorkspace'];
+            const screens = ['screenWelcome', 'screenUserSetup', 'screenPasswordSetup', 'screenApiSetup', 'screenLogin', 'screenCaseHub', 'screenCaseWorkspace', 'screenAnalysisDashboard', 'mainDashboard'];
             screens.forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.classList.add('hidden');
@@ -594,6 +596,164 @@
             });
         }
         window.removeTx = function(index) { caseTransactions.splice(index, 1); renderTxTable(); };
+
+
+        // UI 6 -> UI 7 (進入分析中心)
+        document.getElementById('btnSaveCase')?.addEventListener('click', () => {
+            // Check if we have at least one target
+            if (caseWallets.length === 0 && caseTransactions.length === 0) {
+                if(!confirm("您尚未輸入任何錢包或交易紀錄，確定要直接進入畫布嗎？")) return;
+            }
+            
+            showScreen('screenAnalysisDashboard');
+            document.getElementById('ui7CaseInfo').textContent = document.getElementById('headerCaseInfo').textContent;
+            
+            // Initialize Cytoscape Graph
+            initGraph();
+            // Populate Reconciliation list
+            populateReconciliation();
+        });
+
+        document.getElementById('btnBackToUi6')?.addEventListener('click', () => {
+            showScreen('screenCaseWorkspace');
+        });
+
+        // --- UI 7: Cytoscape Graph Logic ---
+        let cy;
+
+        function initGraph() {
+            if (cy) {
+                cy.destroy(); // 避免重複初始化
+            }
+
+            document.getElementById('cyPlaceholder').style.display = 'none';
+
+            cy = cytoscape({
+                container: document.getElementById('cy'), // container to render in
+                elements: [ 
+                    // 初始化一個中心節點代表「被害人」
+                    { data: { id: 'victim', label: '被害人 (報案中心)' } }
+                ],
+                style: [ // the stylesheet for the graph
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#007bff',
+                            'label': 'data(label)',
+                            'color': '#333',
+                            'font-size': '12px',
+                            'text-valign': 'bottom',
+                            'text-margin-y': '5px',
+                            'width': '40px',
+                            'height': '40px'
+                        }
+                    },
+                    {
+                        selector: 'node[id="victim"]',
+                        style: {
+                            'background-color': '#28a745',
+                            'shape': 'star',
+                            'width': '50px',
+                            'height': '50px'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#ccc',
+                            'target-arrow-color': '#ccc',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'label': 'data(amount)',
+                            'font-size': '10px',
+                            'text-rotation': 'autorotate',
+                            'text-margin-y': '-10px'
+                        }
+                    }
+                ],
+                layout: {
+                    name: 'breadthfirst', // DAG layout
+                    directed: true,
+                    padding: 10
+                }
+            });
+
+            // 畫布互動綁定：點擊節點
+            cy.on('tap', 'node', function(evt){
+                var node = evt.target;
+                if(node.id() === 'victim') return; // 被害人節點不抓API
+
+                // 展開右側剖析面板
+                document.getElementById('panelNodeProfile').style.display = 'block';
+                document.getElementById('panelNodeAddress').textContent = node.id();
+                document.getElementById('panelNodeAct').textContent = "掃描 API 中...";
+                document.getElementById('panelNodeGas').textContent = "掃描 API 中...";
+                
+                // TODO: Here we will call myElectronAPI.analyzeWallet in the next step
+            });
+            
+            // 將 UI 6 填寫的第一個錢包作為初始嫌疑人加入畫布
+            if (caseWallets.length > 0) {
+                const firstSuspect = caseWallets[0].address;
+                cy.add([
+                    { group: 'nodes', data: { id: firstSuspect, label: firstSuspect.substring(0,10)+'...' } },
+                    { group: 'edges', data: { id: 'e1', source: 'victim', target: firstSuspect, amount: '匯款' } }
+                ]);
+                cy.layout({ name: 'breadthfirst', directed: true }).run();
+            }
+        }
+
+        // --- UI 7: Evidence Panel Logic ---
+        document.getElementById('toggleEvidencePanel')?.addEventListener('click', function() {
+            const panel = document.getElementById('evidencePanel');
+            if (panel.style.width === '400px' || panel.style.width === '') {
+                panel.style.width = '40px';
+                document.getElementById('evidencePanelContent').style.display = 'none';
+                this.textContent = '◀';
+            } else {
+                panel.style.width = '400px';
+                document.getElementById('evidencePanelContent').style.display = 'block';
+                this.textContent = '▶';
+            }
+            // Resize graph
+            setTimeout(() => { if(cy) cy.resize(); }, 300);
+        });
+
+        function populateReconciliation() {
+            const container = document.getElementById('reconciliationList');
+            container.innerHTML = '';
+
+            if (caseTransactions.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #aaa; font-size: 0.9em; padding: 20px;">尚無被害人交易紀錄</div>';
+                return;
+            }
+
+            caseTransactions.forEach((tx, i) => {
+                const card = document.createElement('div');
+                card.style.cssText = 'border: 1px solid #eee; border-radius: 4px; background: #fff; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05);';
+                
+                card.innerHTML = `
+                    <div style="display: flex;">
+                        <!-- 左半部：被害人陳述 -->
+                        <div style="flex: 1; padding: 10px; border-right: 1px dashed #eee;">
+                            <div style="font-size: 0.8em; color: #888; margin-bottom: 5px; font-weight: bold;">陳述 (UI 6)</div>
+                            <div style="font-size: 0.85em; margin-bottom: 3px;">📅 ${tx.date} ${tx.time}</div>
+                            <div style="font-size: 0.85em; font-family: monospace; word-break: break-all; color: #d32f2f;">💰 ${tx.crypto} ${tx.coin}</div>
+                        </div>
+                        <!-- 右半部：鏈上真實 -->
+                        <div style="flex: 1; padding: 10px; background-color: #f8f9fa;">
+                            <div style="font-size: 0.8em; color: #888; margin-bottom: 5px; font-weight: bold;">鏈上真實 (API)</div>
+                            <div style="font-size: 0.85em; color: #aaa; font-style: italic;">等待節點比對...</div>
+                        </div>
+                    </div>
+                    <div style="padding: 5px 10px; background-color: #f1f3f5; border-top: 1px solid #eee; text-align: center; font-size: 0.8em; color: #666;">
+                        狀態: 🟡 等待探索加入畫布
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
 
     </script>
 </body>
