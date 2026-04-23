@@ -153,6 +153,116 @@
         </div>
     </div>
 
+
+    <!-- UI 6: 案件資料工作區 (Case Workspace) -->
+    <div id="screenCaseWorkspace" class="dashboard-layout hidden" style="flex-direction: column;">
+        <!-- Top Header -->
+        <div style="background-color: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; font-size: 1.5em;">LumenTracker | 案件資料</h2>
+            <div>
+                <span id="wsInvestigatorInfo" style="margin-right: 20px; font-size: 0.9em; color: #ecf0f1;"></span>
+                <button class="button" id="btnSaveCase" style="background-color: #28a745; padding: 8px 15px; font-size: 0.9em;">💾 儲存並進入分析 (開發中)</button>
+                <button class="button secondary" id="btnBackToHub" style="padding: 8px 15px; font-size: 0.9em; margin-left: 10px;">返回樞紐</button>
+            </div>
+        </div>
+
+        <!-- Main Content Scrollable -->
+        <div style="flex-grow: 1; padding: 20px; overflow-y: auto; background-color: #f0f2f5;">
+            
+            <!-- 區塊一：案情摘要 -->
+            <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">📝 區塊一：案情摘要</h3>
+                <textarea id="wsCaseSummary" placeholder="請簡述案發經過，例如：被害人遭假投資詐騙，於某年某月將資金匯入詐騙集團指定之虛擬貨幣錢包..." style="width: 100%; height: 100px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; box-sizing: border-box; font-size: 1em;"></textarea>
+            </div>
+
+            <!-- 區塊二：嫌疑錢包建檔 -->
+            <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">👛 區塊二：嫌疑錢包建檔</h3>
+                <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">請輸入已知涉案的錢包地址並說明其來源用途。不限新增數量。</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-end;">
+                    <div style="flex: 2;">
+                        <label style="font-size: 0.85em; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">錢包地址 (0x... 或 T...)</label>
+                        <input type="text" id="wsWalletAddr" placeholder="輸入完整錢包地址" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 2;">
+                        <label style="font-size: 0.85em; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">說明</label>
+                        <input type="text" id="wsWalletNote" placeholder="例如：被害人入金、詐騙群組提供..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1;">
+                        <button id="wsBtnAddWallet" class="button" style="width: 100%; padding: 9px;">➕ 新增</button>
+                    </div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa;">
+                            <th style="border: 1px solid #ddd; padding: 8px; width: 50%;">錢包地址</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; width: 40%;">說明</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; width: 10%; text-align: center;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wsWalletTableBody">
+                        <tr id="wsWalletEmptyRow"><td colspan="3" style="text-align: center; color: #999; padding: 15px;">尚無錢包紀錄</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 區塊三：交易紀錄 -->
+            <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">💸 區塊三：交易紀錄 (被害人陳述)</h3>
+                <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">請依據報案人提供之交易明細填寫。系統將自動為您換算「交易匯率」並抓取「當日平均匯率」。</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: flex-end;">
+                    <div style="flex: 1; min-width: 130px;">
+                        <label style="font-size: 0.85em; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">日期</label>
+                        <input type="date" id="wsTxDate" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <label style="font-size: 0.85em; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">時間</label>
+                        <input type="time" id="wsTxTime" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 2; min-width: 150px;">
+                        <label style="font-size: 0.85em; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">FROM (出金)</label>
+                        <input type="text" id="wsTxFrom" placeholder="地址..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 2; min-width: 150px;">
+                        <label style="font-size: 0.85em; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">TO (入金)</label>
+                        <input type="text" id="wsTxTo" placeholder="地址..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1; min-width: 120px;">
+                        <label style="font-size: 0.85em; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">金額 (臺幣)</label>
+                        <input type="number" id="wsTxTwd" placeholder="TWD" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1; min-width: 120px;">
+                        <label style="font-size: 0.85em; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">數量 (USDT/ETH)</label>
+                        <input type="number" id="wsTxCrypto" placeholder="數量" step="0.000001" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <button id="wsBtnAddTx" class="button" style="width: 100%; padding: 9px;">➕ 新增</button>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9em; white-space: nowrap;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="border: 1px solid #ddd; padding: 8px;">日期時間</th>
+                                <th style="border: 1px solid #ddd; padding: 8px;">FROM</th>
+                                <th style="border: 1px solid #ddd; padding: 8px;">TO</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">臺幣金額</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">幣種數量</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: right; color: #007bff;">交易匯率</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: right; color: #28a745;">當日平均匯率</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wsTxTableBody">
+                            <tr id="wsTxEmptyRow"><td colspan="8" style="text-align: center; color: #999; padding: 15px;">尚無交易紀錄</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <script>
         const api = window.electronAPI;
 
@@ -163,7 +273,7 @@
 
         // Helper: Hide all screens
         function hideAllScreens() {
-            const screens = ['screenWelcome', 'screenUserSetup', 'screenPasswordSetup', 'screenApiSetup', 'screenLogin', 'screenCaseHub'];
+            const screens = ['screenWelcome', 'screenUserSetup', 'screenPasswordSetup', 'screenApiSetup', 'screenLogin', 'screenCaseHub', 'screenCaseWorkspace'];
             screens.forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.classList.add('hidden');
