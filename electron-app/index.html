@@ -219,7 +219,7 @@
                     </div>
                     <div style="flex: 1; min-width: 100px;">
                         <label style="font-size: 0.85em; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">時間 (UTC+8)</label>
-                        <input type="time" id="wsTxTime" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                        <input type="text" id="wsTxTime" placeholder="HH:MM (24h)" pattern="^([01]\d|2[0-3]):?([0-5]\d)$" title="請輸入 24 小時制時間，例如 14:30" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
                     </div>
                     <div style="flex: 2; min-width: 150px;">
                         <label style="font-size: 0.85em; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">FROM (出金)</label>
