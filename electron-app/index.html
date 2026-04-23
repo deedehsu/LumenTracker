@@ -523,7 +523,7 @@
         }
         window.removeWallet = function(index) { caseWallets.splice(index, 1); renderWalletTable(); };
 
-        document.getElementById('wsBtnAddTx')?.addEventListener('click', () => {
+        document.getElementById('wsBtnAddTx')?.addEventListener('click', async () => {
             const date = document.getElementById('wsTxDate').value;
             const time = document.getElementById('wsTxTime').value;
             const from = document.getElementById('wsTxFrom').value.trim();
@@ -540,14 +540,32 @@
             const twd = parseFloat(twdStr);
             const crypto = parseFloat(cryptoStr);
             const txRate = (crypto > 0) ? (twd / crypto).toFixed(2) : "0.00";
-            const dailyRate = "待計算..."; 
-
+            
+            // 暫存資料並顯示「計算中...」
+            const newTxIndex = caseTransactions.length;
             caseTransactions.push({
-                date, time, from, to, twd, crypto, coin, txRate, dailyRate
+                date, time, from, to, twd, crypto, coin, txRate, dailyRate: "計算中..."
             });
             renderTxTable();
+            
+            // 清空輸入框以利連續輸入
             document.getElementById('wsTxTwd').value = '';
             document.getElementById('wsTxCrypto').value = '';
+
+            // 呼叫後端 API 獲取當日平均匯率
+            try {
+                const rateRes = await api.getHistoricalRate(date);
+                if (rateRes.success) {
+                    caseTransactions[newTxIndex].dailyRate = rateRes.rate;
+                } else {
+                    caseTransactions[newTxIndex].dailyRate = "獲取失敗";
+                }
+                renderTxTable(); // 更新表格顯示匯率
+            } catch (e) {
+                console.error(e);
+                caseTransactions[newTxIndex].dailyRate = "網路錯誤";
+                renderTxTable();
+            }
         });
 
         function renderTxTable() {

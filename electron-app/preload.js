@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     loginSystem: (password) => ipcRenderer.invoke('login-system', password),
     testApiKey: (data) => ipcRenderer.invoke('test-api-key', data),
     fetchTransactions: (data) => ipcRenderer.invoke('fetch-transactions', data),
-    analyzeWallet: (data) => ipcRenderer.invoke('analyze-wallet', data)
+    analyzeWallet: (data) => ipcRenderer.invoke('analyze-wallet', data),
+    getHistoricalRate: (dateString) => ipcRenderer.invoke('get-historical-rate', dateString)
 });
