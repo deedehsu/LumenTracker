@@ -934,12 +934,12 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             
             try {
                 const data = {
-                    headerCaseInfo: document.getElementById('headerCaseInfo').textContent,
-                    headerTimeInfo: document.getElementById('headerTimeInfo').textContent,
-                    wsInvestigatorInfo: document.getElementById('wsInvestigatorInfo').textContent,
-                    caseSummary: document.getElementById('wsCaseSummary').value,
-                    caseWallets: caseWallets,
-                    caseTransactions: caseTransactions,
+                    headerCaseInfo: document.getElementById('headerCaseInfo')?.textContent || "未知案件",
+                    headerTimeInfo: document.getElementById('headerTimeInfo')?.textContent || "未知時間",
+                    wsInvestigatorInfo: document.getElementById('wsInvestigatorInfo')?.textContent || "未知調查員",
+                    caseSummary: document.getElementById('wsCaseSummary')?.value || "",
+                    caseWallets: caseWallets || [],
+                    caseTransactions: caseTransactions || [],
                     version: "1.0"
                 };
                 
