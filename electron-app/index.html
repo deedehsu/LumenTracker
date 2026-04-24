@@ -33,6 +33,7 @@
 
     <!-- UI 1: 歡迎畫面 (第一次使用) -->
     <div id="screenWelcome" class="container hidden">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 1</div>
         <h1>歡迎使用 LumenTracker</h1>
         <p>為了保護您的偵查隱私與案件機密，本軟體採**完全單機運行**。</p>
         <p>這是一套專業的區塊鏈鑑識平台，我們將引導您完成初始化設定。</p>
@@ -44,6 +45,7 @@
 
     <!-- UI 2: 使用者建檔 (第一次使用) -->
     <div id="screenUserSetup" class="container hidden" style="max-width: 600px;">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 2</div>
         <h2>建立調查員檔案</h2>
         <p>為符合數位證據之監管鏈規範，請詳實填寫以下資訊。</p>
         <p>系統將以您的<strong>聯絡電話</strong>作為登入帳號，所有鑑識紀錄皆會與此檔案綁定。</p>
@@ -73,6 +75,7 @@
 
     <!-- UI 3: 密碼設定 (第一次使用) -->
     <div id="screenPasswordSetup" class="container hidden">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 3</div>
         <h2>設定登入主密碼</h2>
         <p>請為調查員 <strong id="displaySetupUserName" style="color:#007bff;"></strong> 設定一組主密碼。</p>
         <p>此密碼將用於加密您的本機資料庫與 API 金鑰，請妥善保管。</p>
@@ -89,6 +92,7 @@
 
     <!-- UI 4: API Key 申請與綁定 (第一次使用) -->
     <div id="screenApiSetup" class="container hidden" style="max-width: 800px;">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 4</div>
         <h2>配置區塊鏈 API 金鑰</h2>
         <p>系統需要透過節點供應商獲取鏈上公開資料。請綁定您的專屬 API Key (BYOK架構)。</p>
         
@@ -121,6 +125,7 @@
 
     <!-- 畫面 5: 案件建立與證據鏈登錄 -->
     <div id="screenCaseSetup" class="container hidden">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 5.5</div>
         <h2 style="color: #d32f2f;">鑑識調查中心 (案件登錄)</h2>
         <p>為確保法庭證據的<strong>不可否認性 (Non-repudiation)</strong>與<strong>監管鏈 (Chain of Custody)</strong>，請於每次調查前填寫以下資訊。<br>此資訊將綁定於後續所有分析報告與足跡紀錄中。</p>
         <div class="input-group" style="margin-top: 30px;">
@@ -137,6 +142,7 @@
 
     <!-- UI 3 (Login): 系統登入 (非第一次使用) -->
     <div id="screenLogin" class="container hidden">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 3 (Login)</div>
         <div class="lock-icon">🔒</div>
         <h2>系統已鎖定</h2>
         <p>歡迎回來，調查員 <strong id="displayLoginUserName" style="color:#007bff;"></strong></p>
@@ -152,6 +158,7 @@
 
     <!-- UI 5: 案件管理樞紐 (Case Hub) -->
     <div id="screenCaseHub" class="container hidden" style="max-width: 800px;">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 5</div>
         <h2 style="color: #2c3e50;">案件管理樞紐 (Case Hub)</h2>
         <p>調查員 <strong id="displayHubUserName" style="color:#4CAF50;"></strong>，請選擇您要執行的作業：</p>
         
@@ -188,6 +195,7 @@
 
     <!-- UI 6: 案件資料工作區 (Case Workspace) -->
     <div id="screenCaseWorkspace" class="dashboard-layout hidden" style="flex-direction: column;">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 6</div>
         <!-- Top Header -->
         <div style="background-color: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
             <h2 style="margin: 0; font-size: 1.5em;">LumenTracker | 案件資料</h2>
@@ -442,6 +450,7 @@
 
     <!-- UI 7: 鑑識分析與視覺化中心 (Analysis Dashboard) -->
     <div id="screenAnalysisDashboard" class="dashboard-layout hidden">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 7</div>
         <!-- 左側邊欄 (功能列) -->
         <div class="sidebar" style="width: 280px; display: flex; flex-direction: column;">
             <h2 style="font-size: 1.4em;">🛠️ 鑑識工具箱</h2>
