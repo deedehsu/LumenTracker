@@ -944,21 +944,29 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
         // cy.on('tap') is defined inside initGraph. We need to update it.
 
         // --- UI 7: Cytoscape Graph Logic ---
-        
+        let cy;
+
         function initGraph() {
             if (cy) {
-                cy.destroy(); // 避免重複初始化
+                cy.destroy();
+            }
+            
+            const cyContainer = document.getElementById('cy');
+            const cyPlaceholder = document.getElementById('cyPlaceholder');
+            if(!cyContainer) return;
+            if(cyPlaceholder) cyPlaceholder.style.display = 'none';
+
+            if(typeof cytoscape !== 'function') {
+                console.error("Cytoscape is not loaded! Check script tags.");
+                return;
             }
 
-            document.getElementById('cyPlaceholder').style.display = 'none';
-
             cy = cytoscape({
-                container: document.getElementById('cy'), // container to render in
+                container: cyContainer,
                 elements: [ 
-                    // 初始化一個中心節點代表「被害人」
                     { data: { id: 'victim', label: '被害人 (報案中心)' } }
                 ],
-                style: [ // the stylesheet for the graph
+                style: [
                     {
                         selector: 'node',
                         style: {
@@ -997,16 +1005,26 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                     }
                 ],
                 layout: {
-                    name: 'breadthfirst', // DAG layout
+                    name: 'breadthfirst',
                     directed: true,
                     padding: 10
                 }
             });
 
+            if (caseWallets && caseWallets.length > 0) {
+                const firstSuspect = caseWallets[0].address;
+                cy.add([
+                    { group: 'nodes', data: { id: firstSuspect, label: firstSuspect.substring(0,10)+'...' } },
+                    { group: 'edges', data: { id: 'e1', source: 'victim', target: firstSuspect, amount: '匯款' } }
+                ]);
+                cy.layout({ name: 'breadthfirst', directed: true }).run();
+            }
+            
             // 畫布互動綁定：點擊節點
             cy.on('tap', 'node', function(evt){
                 var node = evt.target;
                 
+                // 點擊節點後更新黃框與綠框
                 document.getElementById('tabApiTxs')?.click();
                 
                 const panelNodeEmpty = document.getElementById('panelNodeEmpty');
@@ -1034,36 +1052,40 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 if(document.getElementById('panelNodeApprove')) document.getElementById('panelNodeApprove').textContent = "掃描中...";
                 if(document.getElementById('panelNodeTxs')) document.getElementById('panelNodeTxs').innerHTML = "<div style='text-align:center; padding: 20px; color: #888;'>正在向區塊鏈節點調閱歷史交易紀錄...<br>⏳</div>";
             });
-            
-            // 將 UI 6 填寫的第一個錢包作為初始嫌疑人加入畫布
-            if (caseWallets.length > 0) {
-                const firstSuspect = caseWallets[0].address;
-                cy.add([
-                    { group: 'nodes', data: { id: firstSuspect, label: firstSuspect.substring(0,10)+'...' } },
-                    { group: 'edges', data: { id: 'e1', source: 'victim', target: firstSuspect, amount: '匯款' } }
-                ]);
-                cy.layout({ name: 'breadthfirst', directed: true }).run();
-            }
         }
 
-        // --- UI 7: Evidence Panel Logic ---
-        document.getElementById('toggleEvidencePanel')?.addEventListener('click', function() {
-            const panel = document.getElementById('evidencePanel');
-            if (panel.style.width === '400px' || panel.style.width === '') {
-                panel.style.width = '40px';
-                document.getElementById('evidencePanelContent').style.display = 'none';
-                this.textContent = '◀';
-            } else {
-                panel.style.width = '400px';
-                document.getElementById('evidencePanelContent').style.display = 'block';
-                this.textContent = '▶';
+        // --- UI 7: Tabs Logic (Green Box) ---
+        document.getElementById('tabApiTxs')?.addEventListener('click', function() {
+            this.style.color = '#fff';
+            this.style.backgroundColor = '#27ae60';
+            
+            const tabVictim = document.getElementById('tabVictimTxs');
+            if(tabVictim) {
+                tabVictim.style.color = '#666';
+                tabVictim.style.backgroundColor = '#e9ecef';
             }
-            // Resize graph
-            setTimeout(() => { if(cy) cy.resize(); }, 300);
+            
+            document.getElementById('contentApiTxs').style.display = 'block';
+            document.getElementById('contentVictimTxs').style.display = 'none';
+        });
+
+        document.getElementById('tabVictimTxs')?.addEventListener('click', function() {
+            this.style.color = '#fff';
+            this.style.backgroundColor = '#27ae60';
+            
+            const tabApi = document.getElementById('tabApiTxs');
+            if(tabApi) {
+                tabApi.style.color = '#666';
+                tabApi.style.backgroundColor = '#e9ecef';
+            }
+            
+            document.getElementById('contentApiTxs').style.display = 'none';
+            document.getElementById('contentVictimTxs').style.display = 'block';
         });
 
         function populateReconciliation() {
             const container = document.getElementById('reconciliationList');
+            if (!container) return;
             container.innerHTML = '';
 
             if (caseTransactions.length === 0) {
@@ -1074,19 +1096,16 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             caseTransactions.forEach((tx, i) => {
                 const card = document.createElement('div');
                 card.style.cssText = 'border: 1px solid #eee; border-radius: 4px; background: #fff; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05);';
-                
                 card.innerHTML = `
                     <div style="display: flex;">
-                        <!-- 左半部：被害人陳述 -->
-                        <div style="flex: 1; padding: 10px; border-right: 1px dashed #eee;">
-                            <div style="font-size: 0.8em; color: #888; margin-bottom: 5px; font-weight: bold;">陳述 (UI 6)</div>
+                        <div style="flex: 1; padding: 10px; border-bottom: 1px dashed #eee;">
+                            <div style="font-size: 0.8em; color: #888; margin-bottom: 5px; font-weight: bold; display:flex; justify-content: space-between;"><span>報案陳述 (UI 6)</span> <span style="color:#d32f2f;">💰 ${tx.crypto} ${tx.coin}</span></div>
                             <div style="font-size: 0.85em; margin-bottom: 3px;">📅 ${tx.date} ${tx.time}</div>
-                            <div style="font-size: 0.85em; font-family: monospace; word-break: break-all; color: #d32f2f;">💰 ${tx.crypto} ${tx.coin}</div>
+                            <div style="font-size: 0.8em; font-family: monospace; color: #555; word-break: break-all;">To: ${tx.to}</div>
                         </div>
-                        <!-- 右半部：鏈上真實 -->
                         <div style="flex: 1; padding: 10px; background-color: #f8f9fa;">
-                            <div style="font-size: 0.8em; color: #888; margin-bottom: 5px; font-weight: bold;">鏈上真實 (API)</div>
-                            <div style="font-size: 0.85em; color: #aaa; font-style: italic;">等待節點比對...</div>
+                            <div style="font-size: 0.8em; color: #888; margin-bottom: 5px; font-weight: bold;">鏈上真實 (API 比對)</div>
+                            <div style="font-size: 0.85em; color: #aaa; font-style: italic; display: flex; align-items: center; justify-content: center; height: 30px;">⏳ 尚未在畫布中發現相符交易</div>
                         </div>
                     </div>
                     <div style="padding: 5px 10px; background-color: #f1f3f5; border-top: 1px solid #eee; text-align: center; font-size: 0.8em; color: #666;">
@@ -1096,6 +1115,7 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 container.appendChild(card);
             });
         }
+
 
 
         // UI 6 -> 系統內部案件庫存檔
