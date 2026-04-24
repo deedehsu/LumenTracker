@@ -118,6 +118,23 @@
         </div>
     </div>
 
+
+    <!-- 畫面 5: 案件建立與證據鏈登錄 -->
+    <div id="screenCaseSetup" class="container hidden">
+        <h2 style="color: #d32f2f;">鑑識調查中心 (案件登錄)</h2>
+        <p>為確保法庭證據的<strong>不可否認性 (Non-repudiation)</strong>與<strong>監管鏈 (Chain of Custody)</strong>，請於每次調查前填寫以下資訊。<br>此資訊將綁定於後續所有分析報告與足跡紀錄中。</p>
+        <div class="input-group" style="margin-top: 30px;">
+            <input type="text" id="investigatorUnit" placeholder="調查單位 (例：刑事局偵九隊)" required>
+            <input type="text" id="investigatorName" placeholder="調查員職稱/姓名" required>
+            <input type="text" id="caseId" placeholder="案件編號或名稱 (例：113-反詐-001)" required>
+            <input type="text" id="initialTarget" placeholder="初始已知涉案地址 (選填)">
+            <p class="error-message hidden" id="caseSetupError">請填寫所有必填欄位！</p>
+        </div>
+        <div class="button-group">
+            <button class="button" id="startCaseButton" style="background-color: #d32f2f; font-weight: bold;">立案並開始調查</button>
+        </div>
+    </div>
+
     <!-- UI 3 (Login): 系統登入 (非第一次使用) -->
     <div id="screenLogin" class="container hidden">
         <div class="lock-icon">🔒</div>
