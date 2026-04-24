@@ -569,16 +569,47 @@
         });
 
         // --- UI 5: Case Hub Actions (Placeholders for UI 6) ---
-                document.getElementById('btnCreateCase').addEventListener('click', () => {
-            currentActiveCaseId = null; // Reset for new case
-            document.getElementById('wsCaseSummary').value = '';
-            caseWallets = [];
-            caseTransactions = [];
-            if(typeof renderWalletTable === 'function') renderWalletTable();
-            if(typeof renderTxTable === 'function') renderTxTable();
-            
-            document.getElementById('wsInvestigatorInfo').textContent = `調查員: ${currentUserProfile.unit} | ${currentUserProfile.title} ${currentUserProfile.name}`;
-            showScreen('screenCaseWorkspace');
+                document.getElementById('btnCreateCase')?.addEventListener('click', () => {
+            try {
+                currentActiveCaseId = null; // Reset for new case
+                
+                const summaryEl = document.getElementById('wsCaseSummary');
+                if (summaryEl) summaryEl.value = '';
+                
+                const addrEl = document.getElementById('wsWalletAddr');
+                if (addrEl) addrEl.value = '';
+                
+                const noteEl = document.getElementById('wsWalletNote');
+                if (noteEl) noteEl.value = '';
+                
+                const txDateEl = document.getElementById('wsTxDate');
+                if (txDateEl) txDateEl.value = '';
+
+                caseWallets = [];
+                caseTransactions = [];
+                
+                if(typeof renderWalletTable === 'function') renderWalletTable();
+                if(typeof renderTxTable === 'function') renderTxTable();
+                
+                // Set defaults for UI 5 Setup screen
+                const unitEl = document.getElementById('investigatorUnit');
+                if(unitEl) unitEl.value = currentUserProfile.unit || '';
+                
+                const nameEl = document.getElementById('investigatorName');
+                if(nameEl) nameEl.value = `${currentUserProfile.title || ''} ${currentUserProfile.name || ''}`.trim();
+                
+                const caseIdEl = document.getElementById('caseId');
+                if(caseIdEl) caseIdEl.value = '';
+                
+                const initialTargetEl = document.getElementById('initialTarget');
+                if(initialTargetEl) initialTargetEl.value = '';
+                
+                showScreen('screenCaseSetup'); // Go to Case Setup first!
+                if(caseIdEl) setTimeout(() => caseIdEl.focus(), 100);
+            } catch (e) {
+                alert("切換畫面時發生錯誤: " + e.message);
+                console.error(e);
+            }
         });
 
         document.getElementById('btnImportEdit').addEventListener('click', () => {
