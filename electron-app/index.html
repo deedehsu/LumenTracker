@@ -377,10 +377,13 @@
     <script>
         const api = window.electronAPI;
 
+        
         // State variables
         let tempUserProfile = {};
         let tempPassword = '';
         let currentUserProfile = {};
+                                let cy; // Cytoscape instance
+
 
         // Helper: Hide all screens
         function hideAllScreens() {
@@ -714,10 +717,7 @@
             }
 
 
-        let currentActiveCaseId = null; // 追蹤目前正在編輯的案號
-        let caseWallets = [];
-        let caseTransactions = [];
-
+                        
         document.getElementById('wsBtnAddWallet')?.addEventListener('click', () => {
             const addr = document.getElementById('wsWalletAddr').value.trim();
             const note = document.getElementById('wsWalletNote').value.trim();
@@ -907,8 +907,7 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
         // cy.on('tap') is defined inside initGraph. We need to update it.
 
         // --- UI 7: Cytoscape Graph Logic ---
-        let cy;
-
+        
         function initGraph() {
             if (cy) {
                 cy.destroy(); // 避免重複初始化
