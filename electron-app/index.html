@@ -925,6 +925,41 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             });
         }
 
+
+        // UI 6 -> 本機存檔
+        document.getElementById('btnSaveCaseToFile')?.addEventListener('click', async () => {
+            const btn = document.getElementById('btnSaveCaseToFile');
+            btn.disabled = true;
+            btn.textContent = "儲存中...";
+            
+            try {
+                const data = {
+                    headerCaseInfo: document.getElementById('headerCaseInfo').textContent,
+                    headerTimeInfo: document.getElementById('headerTimeInfo').textContent,
+                    wsInvestigatorInfo: document.getElementById('wsInvestigatorInfo').textContent,
+                    caseSummary: document.getElementById('wsCaseSummary').value,
+                    caseWallets: caseWallets,
+                    caseTransactions: caseTransactions,
+                    version: "1.0"
+                };
+                
+                const apiObj = window.electronAPI || api;
+                const res = await apiObj.saveCaseFile(data);
+                
+                if(res && res.success) {
+                    alert("✅ 案件已成功儲存至本機！\n路徑: " + res.filePath);
+                } else if (res && res.message) {
+                    alert("儲存失敗: " + res.message);
+                }
+            } catch(e) {
+                console.error(e);
+                alert("發生內部錯誤: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "💾 本機存檔";
+            }
+        });
+
     </script>
 </body>
 </html>
