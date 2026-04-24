@@ -570,6 +570,13 @@
 
         // --- UI 5: Case Hub Actions (Placeholders for UI 6) ---
                 document.getElementById('btnCreateCase').addEventListener('click', () => {
+            currentActiveCaseId = null; // Reset for new case
+            document.getElementById('wsCaseSummary').value = '';
+            caseWallets = [];
+            caseTransactions = [];
+            if(typeof renderWalletTable === 'function') renderWalletTable();
+            if(typeof renderTxTable === 'function') renderTxTable();
+            
             document.getElementById('wsInvestigatorInfo').textContent = `調查員: ${currentUserProfile.unit} | ${currentUserProfile.title} ${currentUserProfile.name}`;
             showScreen('screenCaseWorkspace');
         });
@@ -579,6 +586,84 @@
 即將開啟檔案選擇器，導入既有案件並進入編輯模式 (UI 6)...`);
         });
 
+
+
+        document.getElementById('btnOpenCaseDB')?.addEventListener('click', async () => {
+            const modal = document.getElementById('modalCaseList');
+            if(!modal) return;
+            modal.classList.remove('hidden');
+            const container = document.getElementById('caseListContainer');
+            container.innerHTML = '<div style="text-align: center; color: #888;">載入中...</div>';
+            
+            try {
+                const apiObj = window.electronAPI || api;
+                const res = await apiObj.getAllCases();
+                if (res && res.success) {
+                    container.innerHTML = '';
+                    if (res.cases.length === 0) {
+                        container.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">系統內尚無案件資料。</div>';
+                        return;
+                    }
+                    
+                    res.cases.forEach(c => {
+                        const card = document.createElement('div');
+                        const dateStr = new Date(c.lastModified).toLocaleString();
+                        card.style.cssText = 'padding: 15px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #fdfdfd; transition: background 0.2s; margin-bottom: 10px;';
+                        card.innerHTML = `
+                            <div>
+                                <h4 style="margin: 0 0 5px 0; color: #2c3e50;">${c.caseName}</h4>
+                                <div style="font-size: 0.85em; color: #666;">建立者: ${c.investigator} | 最後修改: ${dateStr}</div>
+                                <div style="font-size: 0.85em; color: #888; margin-top: 5px;">內含: ${c.walletCount} 錢包, ${c.txCount} 交易</div>
+                            </div>
+                            <button class="button" style="background-color: #28a745; padding: 8px 15px; border:none; color:white; border-radius: 4px;">載入</button>
+                        `;
+                        
+                        card.addEventListener('mouseenter', () => card.style.backgroundColor = '#f1f8ff');
+                        card.addEventListener('mouseleave', () => card.style.backgroundColor = '#fdfdfd');
+                        
+                        card.addEventListener('click', () => loadCaseFromDB(c.caseId));
+                        container.appendChild(card);
+                    });
+                } else {
+                    container.innerHTML = `<div style="color: red;">讀取失敗: ${res.message}</div>`;
+                }
+            } catch(e) {
+                container.innerHTML = `<div style="color: red;">發生錯誤: ${e.message}</div>`;
+            }
+        });
+
+        document.getElementById('btnCloseModal')?.addEventListener('click', () => {
+            document.getElementById('modalCaseList')?.classList.add('hidden');
+        });
+
+        async function loadCaseFromDB(caseId) {
+            try {
+                const apiObj = window.electronAPI || api;
+                const res = await apiObj.loadCaseInternal(caseId);
+                if(res && res.success) {
+                    const d = res.data;
+                    currentActiveCaseId = d.caseId; 
+                    
+                    if (d.headerCaseInfo && document.getElementById('headerCaseInfo')) document.getElementById('headerCaseInfo').textContent = d.headerCaseInfo;
+                    if (d.headerTimeInfo && document.getElementById('headerTimeInfo')) document.getElementById('headerTimeInfo').textContent = d.headerTimeInfo;
+                    if (d.wsInvestigatorInfo && document.getElementById('wsInvestigatorInfo')) document.getElementById('wsInvestigatorInfo').textContent = d.wsInvestigatorInfo;
+                    if (d.caseSummary && document.getElementById('wsCaseSummary')) document.getElementById('wsCaseSummary').value = d.caseSummary;
+                    
+                    caseWallets = d.caseWallets || [];
+                    caseTransactions = d.caseTransactions || [];
+                    
+                    renderWalletTable();
+                    renderTxTable();
+                    
+                    document.getElementById('modalCaseList').classList.add('hidden');
+                    showScreen('screenCaseWorkspace');
+                } else {
+                    alert("載入失敗: " + res.message);
+                }
+            } catch(e) {
+                alert("發生內部錯誤: " + e.message);
+            }
+        }
 
         // --- UI 6: Case Workspace Add Logic ---
 
@@ -597,6 +682,8 @@
                 });
             }
 
+
+        let currentActiveCaseId = null; // 追蹤目前正在編輯的案號
         let caseWallets = [];
         let caseTransactions = [];
 
