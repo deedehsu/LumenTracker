@@ -841,11 +841,20 @@
                     if (d.wsInvestigatorInfo && document.getElementById('wsInvestigatorInfo')) document.getElementById('wsInvestigatorInfo').textContent = d.wsInvestigatorInfo;
                     if (d.caseSummary && document.getElementById('wsCaseSummary')) document.getElementById('wsCaseSummary').value = d.caseSummary;
                     
-                    caseWallets = d.caseWallets || [];
-                    caseTransactions = d.caseTransactions || [];
+                    window.caseWallets = d.caseWallets || [];
+                    window.caseTransactions = d.caseTransactions || [];
                     
-                    renderWalletTable();
-                    renderTxTable();
+                    if (typeof renderWalletTable === 'function') {
+                        renderWalletTable();
+                    } else if (typeof window.renderWalletTable === 'function') {
+                        window.renderWalletTable();
+                    }
+                    
+                    if (typeof renderTxTable === 'function') {
+                        renderTxTable();
+                    } else if (typeof window.renderTxTable === 'function') {
+                        window.renderTxTable();
+                    }
                     
                     document.getElementById('modalCaseList').classList.add('hidden');
                     showScreen('screenCaseWorkspace');
@@ -893,7 +902,7 @@
             document.getElementById('wsWalletNote').value = '';
         });
 
-        function renderWalletTable() {
+        window.renderWalletTable = function renderWalletTable() {
             const tbody = document.getElementById('wsWalletTableBody');
             if(!tbody) return;
             tbody.innerHTML = '';
@@ -969,7 +978,7 @@
             }
         });
 
-        function renderTxTable() {
+        window.renderTxTable = function renderTxTable() {
             const tbody = document.getElementById('wsTxTableBody');
             if(!tbody) return;
             tbody.innerHTML = '';
