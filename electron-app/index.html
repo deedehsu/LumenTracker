@@ -1122,6 +1122,37 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             }
         });
 
+
+        // --- 案件登錄邏輯 (建立證據鏈) ---
+        document.getElementById('startCaseButton')?.addEventListener('click', () => {
+            const unit = document.getElementById('investigatorUnit').value.trim();
+            const name = document.getElementById('investigatorName').value.trim();
+            const caseName = document.getElementById('caseId').value.trim();
+            const target = document.getElementById('initialTarget').value.trim();
+            const caseSetupError = document.getElementById('caseSetupError');
+
+            if (!unit || !name || !caseName) {
+                caseSetupError.classList.remove('hidden');
+                return;
+            }
+            
+            caseSetupError.classList.add('hidden');
+
+            const now = new Date();
+            const timeString = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+            document.getElementById('headerCaseInfo').textContent = `案件: ${caseName} | 調查單位: ${unit} | 調查員: ${name}`;
+            document.getElementById('headerTimeInfo').textContent = `立案時間: ${timeString}`;
+            document.getElementById('wsInvestigatorInfo').textContent = `調查員: ${unit} | ${name}`;
+
+            showScreen('screenCaseWorkspace');
+
+            if (target) {
+                const wsWalletAddr = document.getElementById('wsWalletAddr');
+                if(wsWalletAddr) wsWalletAddr.value = target;
+            }
+        });
+
     </script>
 </body>
 </html>
