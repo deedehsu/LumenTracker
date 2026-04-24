@@ -194,7 +194,22 @@
             <div>
                 <span id="wsInvestigatorInfo" style="margin-right: 20px; font-size: 0.9em; color: #ecf0f1;"></span>
                 <button class="button" id="btnSaveCaseToFile" style="background-color: #f39c12; padding: 8px 15px; font-size: 0.9em; margin-right: 10px;">💾 存入資料庫</button>
-                <button class="button" id="btnSaveCase" style="background-color: #28a745; padding: 8px 15px; font-size: 0.9em;">▶ 進入畫布分析</button>
+                <button class="button" id="btnSaveCase" style="background-color: #28a745; padding: 8px 15px; font-size: 0.9em;" onclick="
+    try {
+        if (typeof caseWallets !== 'undefined' && caseWallets.length === 0 && typeof caseTransactions !== 'undefined' && caseTransactions.length === 0) {
+            if(!confirm('您尚未輸入任何錢包或交易紀錄，確定要直接進入畫布嗎？')) return;
+        }
+        hideAllScreens();
+        document.getElementById('screenAnalysisDashboard').classList.remove('hidden');
+        if(document.getElementById('ui7CaseInfo') && document.getElementById('headerCaseInfo')) {
+            document.getElementById('ui7CaseInfo').textContent = document.getElementById('headerCaseInfo').textContent;
+        }
+        if(typeof initGraph === 'function') initGraph();
+        if(typeof populateReconciliation === 'function') populateReconciliation();
+    } catch(e) {
+        alert('切換至畫布時發生錯誤: ' + e.message);
+    }
+">▶ 進入畫布分析</button>
                 <button class="button secondary" id="btnBackToHub" style="padding: 8px 15px; font-size: 0.9em; margin-left: 10px;">返回樞紐</button>
             </div>
         </div>
