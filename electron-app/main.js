@@ -402,6 +402,69 @@ app.whenReady().then(async () => {
       });
 
       
+      
+      // --- 內部案件資料庫管理 (Internal Case Database) ---
+      ipcMain.handle('save-case-internal', async (event, caseData) => {
+          try {
+              if (!store) throw new Error('Store is not initialized.');
+              
+              // 取得現有案件庫 (Array of cases)
+              let cases = store.get('cases', []);
+              
+              // 確保有案號或唯一 ID
+              const caseId = caseData.caseId || `CASE_${Date.now()}`;
+              caseData.caseId = caseId;
+              caseData.lastModified = new Date().toISOString();
+
+              // 檢查是否已存在，若有則覆蓋更新，若無則新增
+              const existingIndex = cases.findIndex(c => c.caseId === caseId);
+              if (existingIndex >= 0) {
+                  cases[existingIndex] = caseData;
+              } else {
+                  cases.push(caseData);
+              }
+              
+              store.set('cases', cases);
+              return { success: true, caseId: caseId };
+          } catch(e) {
+              console.error(e);
+              return { success: false, message: e.message };
+          }
+      });
+
+      ipcMain.handle('get-all-cases', async () => {
+          try {
+              if (!store) return { success: false, cases: [] };
+              const cases = store.get('cases', []);
+              // 只回傳摘要資訊給清單顯示 (不回傳龐大的交易紀錄)
+              const summaryList = cases.map(c => ({
+                  caseId: c.caseId,
+                  caseName: c.caseName || '未命名案件',
+                  investigator: c.wsInvestigatorInfo || '未知',
+                  lastModified: c.lastModified,
+                  walletCount: (c.caseWallets || []).length,
+                  txCount: (c.caseTransactions || []).length
+              }));
+              // 依時間排序 (最新在上)
+              summaryList.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+              return { success: true, cases: summaryList };
+          } catch(e) {
+              return { success: false, message: e.message };
+          }
+      });
+
+      ipcMain.handle('load-case-internal', async (event, caseId) => {
+          try {
+              if (!store) throw new Error('Store is not initialized.');
+              const cases = store.get('cases', []);
+              const targetCase = cases.find(c => c.caseId === caseId);
+              if (!targetCase) return { success: false, message: '找不到該案件' };
+              return { success: true, data: targetCase };
+          } catch(e) {
+              return { success: false, message: e.message };
+          }
+      });
+
       ipcMain.handle('get-historical-rate', async (event, dateString) => {
           return await fetchHistoricalRate(dateString);
       });

@@ -146,10 +146,23 @@
             
             <!-- 導入案件區域 -->
             <div style="width: 80%; border: 2px dashed #ccc; padding: 20px; border-radius: 8px; background-color: #fafafa;">
-                <h3 style="margin-top: 0; color: #555; text-align: left;">📥 導入現有案件 (Import Case)</h3>
+                <h3 style="margin-top: 0; color: #555; text-align: left;">📥 系統內案件庫 (Local Database)</h3>
                 <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
-                    <button class="button secondary" id="btnImportEdit" style="flex: 1; padding: 15px; font-size: 1.1em;">✏️ 編輯 (繼續分析)</button>
+                    <button class="button secondary" id="btnOpenCaseDB" style="flex: 1; padding: 15px; font-size: 1.1em;">📂 開啟歷史案件列表</button>
                     <button class="button secondary" id="btnImportAudit" style="flex: 1; padding: 15px; font-size: 1.1em; opacity: 0.5; cursor: not-allowed;" disabled title="目前架構中暫不開放">🛡️ 審核 (暫不開放)</button>
+                </div>
+            </div>
+
+            <!-- 案件選擇 Modal (隱藏) -->
+            <div id="modalCaseList" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 100; display: flex; justify-content: center; align-items: center;">
+                <div style="background: white; padding: 20px; border-radius: 8px; width: 80%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">📂 選擇案件</h3>
+                        <button id="btnCloseModal" style="background: none; border: none; font-size: 1.5em; cursor: pointer;">&times;</button>
+                    </div>
+                    <div id="caseListContainer" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                        <!-- 案件卡片會動態生成於此 -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -163,7 +176,7 @@
             <h2 style="margin: 0; font-size: 1.5em;">LumenTracker | 案件資料</h2>
             <div>
                 <span id="wsInvestigatorInfo" style="margin-right: 20px; font-size: 0.9em; color: #ecf0f1;"></span>
-                <button class="button" id="btnSaveCaseToFile" style="background-color: #f39c12; padding: 8px 15px; font-size: 0.9em; margin-right: 10px;">💾 本機存檔</button>
+                <button class="button" id="btnSaveCaseToFile" style="background-color: #f39c12; padding: 8px 15px; font-size: 0.9em; margin-right: 10px;">💾 存入資料庫</button>
                 <button class="button" id="btnSaveCase" style="background-color: #28a745; padding: 8px 15px; font-size: 0.9em;">▶ 進入畫布分析</button>
                 <button class="button secondary" id="btnBackToHub" style="padding: 8px 15px; font-size: 0.9em; margin-left: 10px;">返回樞紐</button>
             </div>
@@ -926,28 +939,38 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
         }
 
 
-        // UI 6 -> 本機存檔
+        // UI 6 -> 系統內部案件庫存檔
         document.getElementById('btnSaveCaseToFile')?.addEventListener('click', async () => {
             const btn = document.getElementById('btnSaveCaseToFile');
             btn.disabled = true;
             btn.textContent = "儲存中...";
             
             try {
+                // 嘗試從 headerCaseInfo 提取案名 (格式為：案件: xxx | 調查單位: ...)
+                let cName = "未命名案件";
+                const headerText = document.getElementById('headerCaseInfo')?.textContent || "";
+                if(headerText.includes("案件: ")) {
+                    cName = headerText.split("案件: ")[1].split(" |")[0];
+                }
+
                 const data = {
-                    headerCaseInfo: document.getElementById('headerCaseInfo')?.textContent || "未知案件",
+                    caseId: currentActiveCaseId, // 若有載入舊案，則覆寫。若無，後端會自動生成新 ID
+                    caseName: cName,
+                    headerCaseInfo: headerText,
                     headerTimeInfo: document.getElementById('headerTimeInfo')?.textContent || "未知時間",
                     wsInvestigatorInfo: document.getElementById('wsInvestigatorInfo')?.textContent || "未知調查員",
                     caseSummary: document.getElementById('wsCaseSummary')?.value || "",
                     caseWallets: caseWallets || [],
                     caseTransactions: caseTransactions || [],
-                    version: "1.0"
+                    version: "1.1"
                 };
                 
                 const apiObj = window.electronAPI || api;
-                const res = await apiObj.saveCaseFile(data);
+                const res = await apiObj.saveCaseInternal(data);
                 
                 if(res && res.success) {
-                    alert("✅ 案件已成功儲存至本機！\n路徑: " + res.filePath);
+                    currentActiveCaseId = res.caseId; // 更新目前為已儲存的 ID
+                    alert("✅ 案件已成功更新並儲存至系統資料庫！");
                 } else if (res && res.message) {
                     alert("儲存失敗: " + res.message);
                 }
@@ -956,7 +979,7 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 alert("發生內部錯誤: " + e.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = "💾 本機存檔";
+                btn.textContent = "💾 存入資料庫";
             }
         });
 
