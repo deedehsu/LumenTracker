@@ -1,6 +1,7 @@
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 const axios = require('axios');
 
@@ -304,6 +305,38 @@ app.whenReady().then(async () => {
       console.log('electron-store initialized successfully.');
 
       // --- IPC 處理器 ---
+
+      
+      ipcMain.handle('open-case-file', async () => {
+          const { canceled, filePaths } = await dialog.showOpenDialog({
+              title: '導入案件檔',
+              filters: [{ name: 'Lumen Case File', extensions: ['lumen', 'json'] }],
+              properties: ['openFile']
+          });
+          if (canceled || filePaths.length === 0) return { success: false };
+          try {
+              const raw = fs.readFileSync(filePaths[0], 'utf-8');
+              const data = JSON.parse(raw);
+              return { success: true, data };
+          } catch(e) {
+              return { success: false, message: e.message };
+          }
+      });
+
+      ipcMain.handle('save-case-file', async (event, caseData) => {
+          const { canceled, filePath } = await dialog.showSaveDialog({
+              title: '儲存案件檔',
+              defaultPath: `Case_${Date.now()}.lumen`,
+              filters: [{ name: 'Lumen Case File', extensions: ['lumen'] }]
+          });
+          if (canceled || !filePath) return { success: false };
+          try {
+              fs.writeFileSync(filePath, JSON.stringify(caseData, null, 2), 'utf-8');
+              return { success: true, filePath };
+          } catch(e) {
+              return { success: false, message: e.message };
+          }
+      });
 
       ipcMain.handle('check-system-status', async () => {
           if (!store) return { isConfigured: false };

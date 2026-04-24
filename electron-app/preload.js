@@ -7,5 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     testApiKey: (data) => ipcRenderer.invoke('test-api-key', data),
     fetchTransactions: (data) => ipcRenderer.invoke('fetch-transactions', data),
     analyzeWallet: (data) => ipcRenderer.invoke('analyze-wallet', data),
+    openCaseFile: () => ipcRenderer.invoke('open-case-file'),
+    saveCaseFile: (data) => ipcRenderer.invoke('save-case-file', data),
     getHistoricalRate: (dateString) => ipcRenderer.invoke('get-historical-rate', dateString)
 });

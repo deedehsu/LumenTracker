@@ -163,7 +163,8 @@
             <h2 style="margin: 0; font-size: 1.5em;">LumenTracker | 案件資料</h2>
             <div>
                 <span id="wsInvestigatorInfo" style="margin-right: 20px; font-size: 0.9em; color: #ecf0f1;"></span>
-                <button class="button" id="btnSaveCase" style="background-color: #28a745; padding: 8px 15px; font-size: 0.9em;">💾 儲存並進入分析 (開發中)</button>
+                <button class="button" id="btnSaveCaseToFile" style="background-color: #f39c12; padding: 8px 15px; font-size: 0.9em; margin-right: 10px;">💾 本機存檔</button>
+                <button class="button" id="btnSaveCase" style="background-color: #28a745; padding: 8px 15px; font-size: 0.9em;">▶ 進入畫布分析</button>
                 <button class="button secondary" id="btnBackToHub" style="padding: 8px 15px; font-size: 0.9em; margin-left: 10px;">返回樞紐</button>
             </div>
         </div>
@@ -707,8 +708,66 @@
         window.removeTx = function(index) { caseTransactions.splice(index, 1); renderTxTable(); };
 
 
+
+        document.getElementById('btnSaveCaseToFile')?.addEventListener('click', async () => {
+            const data = {
+                headerCaseInfo: document.getElementById('headerCaseInfo').textContent,
+                headerTimeInfo: document.getElementById('headerTimeInfo').textContent,
+                wsInvestigatorInfo: document.getElementById('wsInvestigatorInfo').textContent,
+                caseSummary: document.getElementById('wsCaseSummary').value,
+                caseWallets: caseWallets,
+                caseTransactions: caseTransactions,
+                version: "1.0"
+            };
+            const btn = document.getElementById('btnSaveCaseToFile');
+            btn.disabled = true;
+            btn.textContent = "儲存中...";
+            try {
+                const res = await window.electronAPI.saveCaseFile(data);
+                if(res && res.success) {
+                    alert("✅ 案件已成功儲存至本機！");
+                } else if (res && res.message) {
+                    alert("儲存失敗: " + res.message);
+                }
+            } catch(e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "💾 本機存檔";
+            }
+        });
+
         // UI 6 -> UI 7 (進入分析中心)
-                // UI 6 -> UI 7 (進入分析中心)
+        
+        document.getElementById('btnSaveCaseToFile')?.addEventListener('click', async () => {
+            const data = {
+                headerCaseInfo: document.getElementById('headerCaseInfo').textContent,
+                headerTimeInfo: document.getElementById('headerTimeInfo').textContent,
+                wsInvestigatorInfo: document.getElementById('wsInvestigatorInfo').textContent,
+                caseSummary: document.getElementById('wsCaseSummary').value,
+                caseWallets: caseWallets,
+                caseTransactions: caseTransactions,
+                version: "1.0"
+            };
+            const btn = document.getElementById('btnSaveCaseToFile');
+            btn.disabled = true;
+            btn.textContent = "儲存中...";
+            try {
+                const res = await window.electronAPI.saveCaseFile(data);
+                if(res && res.success) {
+                    alert("✅ 案件已成功儲存至本機！");
+                } else if (res && res.message) {
+                    alert("儲存失敗: " + res.message);
+                }
+            } catch(e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "💾 本機存檔";
+            }
+        });
+
+        // UI 6 -> UI 7 (進入分析中心)
         document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             try {
                 if (caseWallets.length === 0 && caseTransactions.length === 0) {
