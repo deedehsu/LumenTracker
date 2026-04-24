@@ -709,66 +709,8 @@
 
 
 
-        document.getElementById('btnSaveCaseToFile')?.addEventListener('click', async () => {
-            const data = {
-                headerCaseInfo: document.getElementById('headerCaseInfo').textContent,
-                headerTimeInfo: document.getElementById('headerTimeInfo').textContent,
-                wsInvestigatorInfo: document.getElementById('wsInvestigatorInfo').textContent,
-                caseSummary: document.getElementById('wsCaseSummary').value,
-                caseWallets: caseWallets,
-                caseTransactions: caseTransactions,
-                version: "1.0"
-            };
-            const btn = document.getElementById('btnSaveCaseToFile');
-            btn.disabled = true;
-            btn.textContent = "儲存中...";
-            try {
-                const res = await window.electronAPI.saveCaseFile(data);
-                if(res && res.success) {
-                    alert("✅ 案件已成功儲存至本機！");
-                } else if (res && res.message) {
-                    alert("儲存失敗: " + res.message);
-                }
-            } catch(e) {
-                console.error(e);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = "💾 本機存檔";
-            }
-        });
 
-        // UI 6 -> UI 7 (進入分析中心)
-        
-        document.getElementById('btnSaveCaseToFile')?.addEventListener('click', async () => {
-            const data = {
-                headerCaseInfo: document.getElementById('headerCaseInfo').textContent,
-                headerTimeInfo: document.getElementById('headerTimeInfo').textContent,
-                wsInvestigatorInfo: document.getElementById('wsInvestigatorInfo').textContent,
-                caseSummary: document.getElementById('wsCaseSummary').value,
-                caseWallets: caseWallets,
-                caseTransactions: caseTransactions,
-                version: "1.0"
-            };
-            const btn = document.getElementById('btnSaveCaseToFile');
-            btn.disabled = true;
-            btn.textContent = "儲存中...";
-            try {
-                const res = await window.electronAPI.saveCaseFile(data);
-                if(res && res.success) {
-                    alert("✅ 案件已成功儲存至本機！");
-                } else if (res && res.message) {
-                    alert("儲存失敗: " + res.message);
-                }
-            } catch(e) {
-                console.error(e);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = "💾 本機存檔";
-            }
-        });
-
-        // UI 6 -> UI 7 (進入分析中心)
-        document.getElementById('btnSaveCase')?.addEventListener('click', () => {
+document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             try {
                 if (caseWallets.length === 0 && caseTransactions.length === 0) {
                     if(!confirm("您尚未輸入任何錢包或交易紀錄，確定要直接進入畫布嗎？")) return;
