@@ -131,7 +131,7 @@
             <p class="error-message hidden" id="caseSetupError">請填寫所有必填欄位！</p>
         </div>
         <div class="button-group">
-            <button class="button" id="startCaseButton" style="background-color: #d32f2f; font-weight: bold;">立案並開始調查</button>
+            <button class="button" id="startCaseButton" onclick="document.getElementById('screenCaseSetup').classList.add('hidden'); document.getElementById('screenCaseWorkspace').classList.remove('hidden');" style="background-color: #d32f2f; font-weight: bold;">立案並開始調查</button>
         </div>
     </div>
 
@@ -1129,48 +1129,49 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
 
 
         // --- 案件登錄邏輯 (建立證據鏈) ---
-        // --- 案件登錄邏輯 (建立證據鏈) ---
-        document.getElementById('startCaseButton')?.addEventListener('click', () => {
-            try {
-                const unit = document.getElementById('investigatorUnit').value.trim();
-                const name = document.getElementById('investigatorName').value.trim();
-                const caseName = document.getElementById('caseId').value.trim();
-                const target = document.getElementById('initialTarget').value.trim();
-                const caseSetupError = document.getElementById('caseSetupError');
+        const btnStartCase = document.getElementById('startCaseButton');
+        if (btnStartCase) {
+            btnStartCase.addEventListener('click', () => {
+                try {
+                    const unit = document.getElementById('investigatorUnit')?.value.trim() || '';
+                    const name = document.getElementById('investigatorName')?.value.trim() || '';
+                    const caseName = document.getElementById('caseId')?.value.trim() || '';
+                    const target = document.getElementById('initialTarget')?.value.trim() || '';
+                    const caseSetupError = document.getElementById('caseSetupError');
 
-                if (!unit || !name || !caseName) {
-                    if(caseSetupError) caseSetupError.classList.remove('hidden');
-                    return;
+                    if (!unit || !name || !caseName) {
+                        if(caseSetupError) caseSetupError.classList.remove('hidden');
+                        return;
+                    }
+                    
+                    if(caseSetupError) caseSetupError.classList.add('hidden');
+
+                    const now = new Date();
+                    const timeString = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+                    const hci = document.getElementById('headerCaseInfo');
+                    if(hci) hci.textContent = `案件: ${caseName} | 調查單位: ${unit} | 調查員: ${name}`;
+                    
+                    const hti = document.getElementById('headerTimeInfo');
+                    if(hti) hti.textContent = `立案時間: ${timeString}`;
+                    
+                    const wsii = document.getElementById('wsInvestigatorInfo');
+                    if(wsii) wsii.textContent = `調查員: ${unit} | ${name}`;
+
+                    // **絕對強制** 隱藏紅畫面並顯示 UI 6
+                    document.getElementById('screenCaseSetup').classList.add('hidden');
+                    document.getElementById('screenCaseWorkspace').classList.remove('hidden');
+
+                    if (target) {
+                        const wsWalletAddr = document.getElementById('wsWalletAddr');
+                        if(wsWalletAddr) wsWalletAddr.value = target;
+                    }
+                } catch (err) {
+                    alert("建立案件失敗: " + err.message);
+                    console.error(err);
                 }
-                
-                if(caseSetupError) caseSetupError.classList.add('hidden');
-
-                const now = new Date();
-                const timeString = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-
-                const hci = document.getElementById('headerCaseInfo');
-                if(hci) hci.textContent = `案件: ${caseName} | 調查單位: ${unit} | 調查員: ${name}`;
-                
-                const hti = document.getElementById('headerTimeInfo');
-                if(hti) hti.textContent = `立案時間: ${timeString}`;
-                
-                const wsii = document.getElementById('wsInvestigatorInfo');
-                if(wsii) wsii.textContent = `調查員: ${unit} | ${name}`;
-
-                // 確保切換畫面
-                hideAllScreens();
-                const wsScreen = document.getElementById('screenCaseWorkspace');
-                if (wsScreen) wsScreen.classList.remove('hidden');
-
-                if (target) {
-                    const wsWalletAddr = document.getElementById('wsWalletAddr');
-                    if(wsWalletAddr) wsWalletAddr.value = target;
-                }
-            } catch (err) {
-                alert("建立案件失敗: " + err.message);
-                console.error(err);
-            }
-        });
+            });
+        }
 
     </script>
 </body>
