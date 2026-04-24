@@ -971,27 +971,32 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             cy.on('tap', 'node', function(evt){
                 var node = evt.target;
                 
-                // 點擊節點後更新黃框與綠框
-                document.getElementById('tabApiTxs').click();
-                document.getElementById('panelNodeEmpty').style.display = 'none';
-                document.getElementById('panelNodeData').style.display = 'block';
-                document.getElementById('panelTxsEmpty').style.display = 'none';
-                document.getElementById('panelNodeTxs').style.display = 'block';
+                document.getElementById('tabApiTxs')?.click();
+                
+                const panelNodeEmpty = document.getElementById('panelNodeEmpty');
+                const panelNodeData = document.getElementById('panelNodeData');
+                const panelTxsEmpty = document.getElementById('panelTxsEmpty');
+                const panelNodeTxs = document.getElementById('panelNodeTxs');
+                
+                if (panelNodeEmpty) panelNodeEmpty.style.display = 'none';
+                if (panelNodeData) panelNodeData.style.display = 'block';
+                if (panelTxsEmpty) panelTxsEmpty.style.display = 'none';
+                if (panelNodeTxs) panelNodeTxs.style.display = 'block';
                 
                 if(node.id() === 'victim') {
-                    document.getElementById('panelNodeAddress').textContent = "報案中心 / 被害人";
-                    document.getElementById('panelNodeAct').textContent = "N/A";
-                    document.getElementById('panelNodeGas').textContent = "N/A";
-                    document.getElementById('panelNodeApprove').textContent = "N/A";
-                    document.getElementById('panelNodeTxs').innerHTML = "<div style='text-align:center; padding: 20px; color: #888;'>此為系統虛擬節點。<br>請點擊下方畫布中的真實錢包地址，進行 API 資料調閱。</div>";
+                    if(document.getElementById('panelNodeAddress')) document.getElementById('panelNodeAddress').textContent = "報案中心 / 被害人";
+                    if(document.getElementById('panelNodeAct')) document.getElementById('panelNodeAct').textContent = "N/A";
+                    if(document.getElementById('panelNodeGas')) document.getElementById('panelNodeGas').textContent = "N/A";
+                    if(document.getElementById('panelNodeApprove')) document.getElementById('panelNodeApprove').textContent = "N/A";
+                    if(document.getElementById('panelNodeTxs')) document.getElementById('panelNodeTxs').innerHTML = "<div style='text-align:center; padding: 20px; color: #888;'>此為系統虛擬節點。<br>請點擊下方畫布中的真實錢包地址，進行 API 資料調閱。</div>";
                     return;
                 }
 
-                document.getElementById('panelNodeAddress').textContent = node.id();
-                document.getElementById('panelNodeAct').textContent = "掃描中...";
-                document.getElementById('panelNodeGas').textContent = "掃描中...";
-                document.getElementById('panelNodeApprove').textContent = "掃描中...";
-                document.getElementById('panelNodeTxs').innerHTML = "<div style='text-align:center; padding: 20px; color: #888;'>正在向區塊鏈節點調閱歷史交易紀錄...<br>⏳</div>";
+                if(document.getElementById('panelNodeAddress')) document.getElementById('panelNodeAddress').textContent = node.id();
+                if(document.getElementById('panelNodeAct')) document.getElementById('panelNodeAct').textContent = "掃描中...";
+                if(document.getElementById('panelNodeGas')) document.getElementById('panelNodeGas').textContent = "掃描中...";
+                if(document.getElementById('panelNodeApprove')) document.getElementById('panelNodeApprove').textContent = "掃描中...";
+                if(document.getElementById('panelNodeTxs')) document.getElementById('panelNodeTxs').innerHTML = "<div style='text-align:center; padding: 20px; color: #888;'>正在向區塊鏈節點調閱歷史交易紀錄...<br>⏳</div>";
             });
             
             // 將 UI 6 填寫的第一個錢包作為初始嫌疑人加入畫布
