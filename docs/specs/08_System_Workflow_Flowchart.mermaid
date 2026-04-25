@@ -1,0 +1,53 @@
+graph TD
+    %% Define Styles
+    classDef start_end fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef ui_screen fill:#bbf,stroke:#333,stroke-width:1px;
+    classDef process fill:#fff,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef decision fill:#ff9,stroke:#333,stroke-width:1px;
+    classDef database fill:#dfd,stroke:#333,stroke-width:1px;
+    
+    %% Boot & Init
+    Start((System Launch)):::start_end --> CheckConfig{Check config.json}:::decision
+    
+    CheckConfig -- Not Configured (First Run) --> UI1[UI 1: Welcome Screen]:::ui_screen
+    CheckConfig -- Configured --> UI3_L[UI 3: System Login]:::ui_screen
+    
+    %% First Time Setup
+    UI1 --> UI2[UI 2: Investigator Setup<br/>Input Name, Phone as ID]:::ui_screen
+    UI2 --> UI3_S[UI 3: Password Setup<br/>Set Master Password]:::ui_screen
+    UI3_S --> UI4[UI 4: API Key Setup<br/>Bind Etherscan/Tronscan]:::ui_screen
+    
+    UI4 -- PBKDF2 Encryption --> LocalStore[(electron-store<br/>Local DB)]:::database
+    UI4 --> UI5
+    
+    %% Login
+    UI3_L -- Decrypt Keys --> LocalStore
+    UI3_L -- Success --> UI5[UI 5: Case Hub<br/>Dashboard]:::ui_screen
+    
+    %% Case Hub
+    UI5 -->|Create New Case| ResetVars[Clear Global Variables]:::process
+    ResetVars --> UI5_5[UI 5.5: Case Setup<br/>Input Case ID & Target]:::ui_screen
+    
+    UI5 -->|Load Historical Case| OpenModal[Open Case List Modal]:::process
+    OpenModal -->|Select Case| FetchDB[(Load from Local DB)]:::database
+    FetchDB --> UI6
+    
+    %% Case Workspace
+    UI5_5 -- Generate Audit Header --> UI6[UI 6: Case Workspace]:::ui_screen
+    
+    UI6 -->|Add Tx Record| CalcRate[Auto-calculate Exchange Rate<br/>Fetch Binance API]:::process
+    CalcRate --> UI6
+    
+    UI6 -->|Save to DB| LocalStore
+    
+    %% Analysis Dashboard (Canvas)
+    UI6 -->|Proceed to Analysis| UI7[UI 7: Analysis Dashboard<br/>Cytoscape Graph]:::ui_screen
+    
+    UI7 -->|Click Node| APICall[Fetch Blockchain API<br/>Etherscan/Tronscan]:::process
+    APICall --> Panel[Update Evidence Panel<br/>Target Profiling & Tx List]:::ui_screen
+    
+    Panel -->|Click 'Add to Graph'| AddNode[Inject Node & Edge<br/>Auto-Layout DAG]:::process
+    AddNode --> UI7
+    
+    %% Export
+    UI7 -->|Snapshot/Export| End((Generate Forensic Report<br/>with Hash & Audit Log)):::start_end
