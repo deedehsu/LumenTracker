@@ -136,7 +136,7 @@
             <p class="error-message hidden" id="caseSetupError">請填寫所有必填欄位！</p>
         </div>
         <div class="button-group">
-            <button class="button" id="startCaseButton" onclick="document.getElementById('screenCaseSetup').classList.add('hidden'); document.getElementById('screenCaseWorkspace').classList.remove('hidden');" style="background-color: #d32f2f; font-weight: bold;">立案並開始調查</button>
+            <button class="button" id="startCaseButton"  style="background-color: #d32f2f; font-weight: bold;">立案並開始調查</button>
         </div>
     </div>
 
@@ -201,69 +201,8 @@
             <h2 style="margin: 0; font-size: 1.5em;">LumenTracker | 案件資料</h2>
             <div>
                 <span id="wsInvestigatorInfo" style="margin-right: 20px; font-size: 0.9em; color: #ecf0f1;"></span>
-                <button class="button" id="btnSaveCaseToFile" style="background-color: #f39c12; padding: 8px 15px; font-size: 0.9em; margin-right: 10px;" onclick="
-    (async () => {
-        const btn = document.getElementById('btnSaveCaseToFile');
-        btn.disabled = true;
-        btn.textContent = '儲存中...';
-        
-        try {
-            let cName = '未命名案件';
-            const headerText = document.getElementById('headerCaseInfo') ? document.getElementById('headerCaseInfo').textContent : '';
-            if(headerText.includes('案件: ')) {
-                cName = headerText.split('案件: ')[1].split(' |')[0];
-            }
-            
-            if (typeof currentActiveCaseId === 'undefined') window.currentActiveCaseId = null;
-            if (typeof caseWallets === 'undefined') window.caseWallets = [];
-            if (typeof caseTransactions === 'undefined') window.caseTransactions = [];
-
-            const data = {
-                caseId: currentActiveCaseId,
-                caseName: cName,
-                headerCaseInfo: headerText,
-                headerTimeInfo: document.getElementById('headerTimeInfo') ? document.getElementById('headerTimeInfo').textContent : '未知時間',
-                wsInvestigatorInfo: document.getElementById('wsInvestigatorInfo') ? document.getElementById('wsInvestigatorInfo').textContent : '未知調查員',
-                caseSummary: document.getElementById('wsCaseSummary') ? document.getElementById('wsCaseSummary').value : '',
-                caseWallets: caseWallets,
-                caseTransactions: caseTransactions,
-                version: '1.1'
-            };
-            
-            const apiObj = window.electronAPI || window.api;
-            const res = await apiObj.saveCaseInternal(data);
-            
-            if(res && res.success) {
-                currentActiveCaseId = res.caseId;
-                alert('✅ 案件已成功更新並儲存至系統資料庫！');
-            } else if (res && res.message) {
-                alert('儲存失敗: ' + res.message);
-            }
-        } catch(e) {
-            console.error(e);
-            alert('發生內部錯誤: ' + e.message);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = '💾 存入資料庫';
-        }
-    })();
-">💾 存入資料庫</button>
-                <button class="button" id="btnSaveCase" style="background-color: #28a745; padding: 8px 15px; font-size: 0.9em;" onclick="
-    try {
-        if (typeof caseWallets !== 'undefined' && caseWallets.length === 0 && typeof caseTransactions !== 'undefined' && caseTransactions.length === 0) {
-            if(!confirm('您尚未輸入任何錢包或交易紀錄，確定要直接進入畫布嗎？')) return;
-        }
-        hideAllScreens();
-        document.getElementById('screenAnalysisDashboard').classList.remove('hidden');
-        if(document.getElementById('ui7CaseInfo') && document.getElementById('headerCaseInfo')) {
-            document.getElementById('ui7CaseInfo').textContent = document.getElementById('headerCaseInfo').textContent;
-        }
-        if(typeof initGraph === 'function') initGraph();
-        if(typeof populateReconciliation === 'function') populateReconciliation();
-    } catch(e) {
-        alert('切換至畫布時發生錯誤: ' + e.message);
-    }
-">▶ 進入畫布分析</button>
+                <button class="button" id="btnSaveCaseToFile" style="background-color: #f39c12; padding: 8px 15px; font-size: 0.9em; margin-right: 10px;" >💾 存入資料庫</button>
+                <button class="button" id="btnSaveCase" style="background-color: #28a745; padding: 8px 15px; font-size: 0.9em;" >▶ 進入畫布分析</button>
                 <button class="button secondary" id="btnBackToHub" style="padding: 8px 15px; font-size: 0.9em; margin-left: 10px;">返回樞紐</button>
             </div>
         </div>
@@ -291,21 +230,7 @@
                         <input type="text" id="wsWalletNote" placeholder="例如：被害人入金、詐騙群組提供..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
                     </div>
                     <div style="flex: 1;">
-                        <button id="wsBtnAddWallet" class="button" style="width: 100%; padding: 9px;" onclick="
-    try {
-        const addr = document.getElementById('wsWalletAddr').value.trim();
-        const note = document.getElementById('wsWalletNote').value.trim();
-        if (!addr) { alert('請輸入錢包地址！'); return; }
-        if (typeof caseWallets === 'undefined') window.caseWallets = [];
-        if (caseWallets.some(w => w.address.toLowerCase() === addr.toLowerCase())) {
-            alert('此錢包地址已存在清單中，請勿重複新增！'); return;
-        }
-        caseWallets.push({ address: addr, note: note });
-        if(typeof renderWalletTable === 'function') renderWalletTable();
-        document.getElementById('wsWalletAddr').value = '';
-        document.getElementById('wsWalletNote').value = '';
-    } catch(e) { alert('新增錢包發生錯誤: ' + e.message); }
-">➕ 新增</button>
+                        <button id="wsBtnAddWallet" class="button" style="width: 100%; padding: 9px;" >➕ 新增</button>
                     </div>
                 </div>
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
@@ -363,64 +288,7 @@
                         <input type="number" id="wsTxCrypto" placeholder="數量" step="0.000001" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
                     </div>
                     <div style="flex: 1; min-width: 100px;">
-                        <button id="wsBtnAddTx" class="button" style="width: 100%; padding: 9px;" onclick="
-    try {
-        const date = document.getElementById('wsTxDate').value;
-        const time = document.getElementById('wsTxTime').value;
-        const from = document.getElementById('wsTxFrom').value.trim();
-        const to = document.getElementById('wsTxTo').value.trim();
-        const twdStr = document.getElementById('wsTxTwd').value;
-        const cryptoStr = document.getElementById('wsTxCrypto').value;
-        const coin = document.getElementById('wsTxCoin') ? document.getElementById('wsTxCoin').value.trim() : 'USDT';
-
-        if (!date || !twdStr || !cryptoStr) {
-            alert('請至少填寫日期、臺幣金額與數量！'); return;
-        }
-
-        const twd = parseFloat(twdStr);
-        const crypto = parseFloat(cryptoStr);
-        const txRate = (crypto > 0) ? (twd / crypto).toFixed(2) : '0.00';
-        
-        if (typeof caseTransactions === 'undefined') window.caseTransactions = [];
-        const newTxIndex = caseTransactions.length;
-        
-        caseTransactions.push({
-            date: date, time: time, from: from, to: to, twd: twd, crypto: crypto, coin: coin || 'USDT', txRate: txRate, dailyRate: '計算中...'
-        });
-        
-        if(typeof renderTxTable === 'function') renderTxTable();
-        
-        document.getElementById('wsTxDate').value = '';
-        document.getElementById('wsTxTime').value = '';
-        document.getElementById('wsTxFrom').value = '';
-        document.getElementById('wsTxTo').value = '';
-        document.getElementById('wsTxTwd').value = '';
-        document.getElementById('wsTxCrypto').value = '';
-
-        // async part inside onclick needs an IIFE
-        (async () => {
-            try {
-                const apiObj = window.electronAPI || window.api;
-                if (apiObj && apiObj.getHistoricalRate) {
-                    const rateRes = await apiObj.getHistoricalRate(date);
-                    if (rateRes && rateRes.success) {
-                        caseTransactions[newTxIndex].dailyRate = rateRes.rate;
-                    } else {
-                        caseTransactions[newTxIndex].dailyRate = '無資料';
-                    }
-                } else {
-                    const month = parseInt(date.split('-')[1], 10) || 1;
-                    caseTransactions[newTxIndex].dailyRate = (31.0 + (month * 0.1)).toFixed(2);
-                }
-                if(typeof renderTxTable === 'function') renderTxTable();
-            } catch(e) {
-                console.error(e);
-                caseTransactions[newTxIndex].dailyRate = '錯誤';
-                if(typeof renderTxTable === 'function') renderTxTable();
-            }
-        })();
-    } catch(e) { alert('新增交易發生錯誤: ' + e.message); }
-">➕ 新增</button>
+                        <button id="wsBtnAddTx" class="button" style="width: 100%; padding: 9px;" >➕ 新增</button>
                     </div>
                 </div>
                 <div style="overflow-x: auto;">
@@ -513,6 +381,7 @@
                             <p style="margin: 3px 0;"><strong>啟用時間:</strong> <span id="panelNodeAct">掃描中...</span></p>
                             <p style="margin: 3px 0;"><strong>手續費來源:</strong> <span id="panelNodeGas">掃描中...</span></p>
                         </div>
+                        <div id="panelNodeTxs" style="margin-top: 15px;"></div>
                     </div>
 
                     <!-- 交易紀錄核對表 (Side-by-side) -->
@@ -533,6 +402,7 @@
     </div>
 
     <script>
+        let currentLumenApiKeys = null;
         const api = window.electronAPI;
 
         
@@ -681,6 +551,7 @@
 
                 if (res.success) {
                     currentUserProfile = tempUserProfile;
+                    currentLumenApiKeys = apiKeys;
                     // Setup done, move to UI 5 (Case Hub)
                     document.getElementById('displayHubUserName').textContent = `${currentUserProfile.unit} - ${currentUserProfile.title} ${currentUserProfile.name}`;
                     showScreen('screenCaseHub');
@@ -716,6 +587,7 @@
                 const res = await api.loginSystem(pwd);
                 if (res.success) {
                     currentUserProfile = res.userProfile;
+                    currentLumenApiKeys = res.apiKeys || null;
                     document.getElementById('displayHubUserName').textContent = `${currentUserProfile.unit} - ${currentUserProfile.title} ${currentUserProfile.name}`;
                     document.getElementById('inputLoginPwd').value = '';
                     showScreen('screenCaseHub');
@@ -1166,15 +1038,8 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 
                 document.getElementById('tabApiTxs')?.click();
                 
-                const panelNodeEmpty = document.getElementById('panelNodeEmpty');
-                const panelNodeData = document.getElementById('panelNodeData');
-                const panelTxsEmpty = document.getElementById('panelTxsEmpty');
-                const panelNodeTxs = document.getElementById('panelNodeTxs');
-                
-                if (panelNodeEmpty) panelNodeEmpty.style.display = 'none';
-                if (panelNodeData) panelNodeData.style.display = 'block';
-                if (panelTxsEmpty) panelTxsEmpty.style.display = 'none';
-                if (panelNodeTxs) panelNodeTxs.style.display = 'block';
+                const panelNodeProfile = document.getElementById('panelNodeProfile');
+                if (panelNodeProfile) panelNodeProfile.style.display = 'block';
                 
                 if(node.id() === 'victim') {
                     if(document.getElementById('panelNodeAddress')) document.getElementById('panelNodeAddress').textContent = "報案中心 / 被害人";
@@ -1295,34 +1160,7 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
 
         }
 
-        // --- UI 7: Tabs Logic (Green Box) ---
-        document.getElementById('tabApiTxs')?.addEventListener('click', function() {
-            this.style.color = '#fff';
-            this.style.backgroundColor = '#27ae60';
-            
-            const tabVictim = document.getElementById('tabVictimTxs');
-            if(tabVictim) {
-                tabVictim.style.color = '#666';
-                tabVictim.style.backgroundColor = '#e9ecef';
-            }
-            
-            document.getElementById('contentApiTxs').style.display = 'block';
-            document.getElementById('contentVictimTxs').style.display = 'none';
-        });
-
-        document.getElementById('tabVictimTxs')?.addEventListener('click', function() {
-            this.style.color = '#fff';
-            this.style.backgroundColor = '#27ae60';
-            
-            const tabApi = document.getElementById('tabApiTxs');
-            if(tabApi) {
-                tabApi.style.color = '#666';
-                tabApi.style.backgroundColor = '#e9ecef';
-            }
-            
-            document.getElementById('contentApiTxs').style.display = 'none';
-            document.getElementById('contentVictimTxs').style.display = 'block';
-        });
+        
 
         function populateReconciliation() {
             const container = document.getElementById('reconciliationList');
