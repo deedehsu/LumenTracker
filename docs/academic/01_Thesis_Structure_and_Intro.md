@@ -16,8 +16,10 @@
     *   1.4 Thesis Structure (論文架構)
 *   **2. Background and Literature Review (背景與文獻回顧)**
     *   2.1 Current State of Blockchain Forensics Technology (區塊鏈鑑識技術發展現況)
-    *   2.2 Digital Evidence Standards and Judicial Challenges (數位證據標準與司法挑戰)
-        *   2.2.1 區塊鏈鑑識與數位證據標準之關聯與挑戰 (Correlation and Challenges of Blockchain Forensics and Digital Evidence Standards)
+    *   2.2 Application Potential of Serverless Architecture in Forensics (無伺服器架構在鑑識領域的應用潛力)
+    *   2.3 Forensic Science and Visual Presentation (鑑識科學與視覺化呈現)
+    *   2.4 Digital Evidence Standards and Judicial Challenges (數位證據標準與司法挑戰)
+        *   2.4.1 區塊鏈鑑識與數位證據標準之關聯與挑戰 (Correlation and Challenges of Blockchain Forensics and Digital Evidence Standards)
 
             在 Web3.0 時代，數位鑑識（Digital Forensics）的範疇已顯著擴展，尤其是在處理區塊鏈交易追蹤與分析（Blockchain Transaction Tracking and Analysis）時。兩者互補且緊密連結，數位鑑識專注於傳統電子證據的採證與還原，而區塊鏈分析則聚焦於鏈上資產流向的數位追蹤，兩者結合方能完成從「虛擬世界」追溯回「現實實體」的證據閉環。
 
@@ -36,7 +38,7 @@
 
             **總結：**
             區塊鏈交易資料應被視為「分散式存儲的數位證據」。透過嚴謹的採證行為，將鏈上資料抓取並存入受監管的數位儲存媒體後，它便完全適用於現行 SOP 中關於「邏輯性資料」與「證據監管鏈要求」的規範。LumenTracker 的設計正是在此基礎上，透過其「全程操作同步驗證」、「證據同一性雜湊封裝」及「法庭展演模式」等功能，來強化這些分散式數位證據的司法效力與可呈堂性。
-        *   2.2.2 基於 ISO/IEC 27037 實踐 ARRJ 原則之數位證據規範化 (Normalizing Digital Evidence based on ISO/IEC 27037 and ARRJ Principles)
+        *   2.4.2 基於 ISO/IEC 27037 實踐 ARRJ 原則之數位證據規範化 (Normalizing Digital Evidence based on ISO/IEC 27037 and ARRJ Principles)
 
             在探討區塊鏈與數位證據的交集後，確保這些數位證據在法庭上的證據能力與證明力，必須建立在堅實的科學證據理論基礎上。在數位鑑識科學領域，**ISO/IEC 27037** 提供了數位證據處理的「標準程序（Procedure）」，而 **ARRJ 原則** 則提供了衡量這些程序品質的「科學指標（Metrics）」。兩者的結合，為本研究（如 LumenTracker 的設計）提供了無可辯駁的法學與鑑識科學基礎。
 
@@ -52,8 +54,6 @@
             區塊鏈與虛擬貨幣流向追蹤面臨獨特挑戰：虛擬貨幣交易所的 API 回傳資料或鏈上探測器（如 LumenTracker）的結果具有動態性質，如何滿足「可重現性」與「正當性」？
             本研究提議，在處理此類動態分散式數據時，應將 ISO 27037 的「識別 (Identification)」與「取得 (Acquisition)」階段進行擴充。具體而言，取證過程必須強制包含精確的「時間戳記（Timestamp）」與「API 來源/版本記錄」。LumenTracker 透過「案件沙盒」與「常駐證據鏈標頭」強制綁定調查員身分與取證時間，正是為了將動態的區塊鏈 API 查詢，固化為符合 ARRJ Justifiability 標準的靜態證據，為第一線人員提供一套符合國際規範的鑑識工具指引。
 
-    *   2.3 Application Potential of Serverless Architecture in Forensics (無伺服器架構在鑑識領域的應用潛力)
-    *   2.4 Forensic Science and Visual Presentation (鑑識科學與視覺化呈現)
 *   **3. Research Questions and Goals (研究問題與目標)**
     *   3.1 Research Questions (研究問題)
     *   3.2 Research Objectives (研究目的)
