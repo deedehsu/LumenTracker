@@ -200,7 +200,10 @@
         <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 6</div>
         <!-- Top Header -->
         <div style="background-color: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0; font-size: 1.5em;">LumenTracker | 案件資料</h2>
+            <div>
+                <h2 id="headerCaseInfo" style="margin: 0; font-size: 1.5em;">LumenTracker | 案件資料</h2>
+                <div id="headerTimeInfo" style="font-size: 0.85em; color: #bdc3c7; margin-top: 5px;"></div>
+            </div>
             <div>
                 <span id="wsInvestigatorInfo" style="margin-right: 20px; font-size: 0.9em; color: #ecf0f1;"></span>
                 <button class="button" id="btnSaveCaseToFile" style="background-color: #f39c12; padding: 8px 15px; font-size: 0.9em; margin-right: 10px;" >💾 存入資料庫</button>
