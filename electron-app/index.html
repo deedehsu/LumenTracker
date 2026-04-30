@@ -27,6 +27,8 @@
         .api-section h3 { margin-top: 0; font-size: 1.2em; color: #555; }
         .test-result { margin-top: 5px; font-weight: bold; }
         .lock-icon { color: #007bff; font-size: 4em; margin-bottom: 20px; }
+    
+        .dashboard-layout { display: flex; width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
@@ -654,7 +656,7 @@
             }
         });
 
-        document.getElementById('btnImportEdit').addEventListener('click', () => {
+        document.getElementById('btnImportEdit')?.addEventListener('click', () => {
             alert(`[開發中]
 即將開啟檔案選擇器，導入既有案件並進入編輯模式 (UI 6)...`);
         });
