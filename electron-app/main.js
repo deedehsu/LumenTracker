@@ -69,12 +69,22 @@ async function fetchHistoricalRate(dateString, coinType = 'USDT') {
             console.warn(`Could not parse ${coinSymbol}, defaulting to 1.0 USD`);
         }
 
-        // 2. Fetch USD to TWD
+        // 2. Fetch USD to TWD (Calculate Average of High and Low)
         const twdRes = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/USDTWD=X?interval=1d&period1=${start}&period2=${end}`, { timeout: 8000 });
         let usdTwdRate = 32.0; // fallback
+        let calculationMethod = "Close Price";
         try {
-            const twdCloses = twdRes.data.chart.result[0].indicators.quote[0].close;
-            usdTwdRate = twdCloses.find(p => p !== null) || 32.0;
+            const quote = twdRes.data.chart.result[0].indicators.quote[0];
+            const high = quote.high.find(p => p !== null);
+            const low = quote.low.find(p => p !== null);
+            
+            if (high !== undefined && low !== undefined) {
+                usdTwdRate = (high + low) / 2;
+                calculationMethod = "Average of High/Low";
+            } else {
+                // Fallback to close if high/low are missing
+                usdTwdRate = quote.close.find(p => p !== null) || 32.0;
+            }
         } catch(e) {
             console.warn(`Could not parse USDTWD=X, defaulting to 32.0 TWD`);
         }
@@ -82,7 +92,7 @@ async function fetchHistoricalRate(dateString, coinType = 'USDT') {
         // Calculate final Crypto to TWD rate
         const finalTwdRate = (coinUsdPrice * usdTwdRate).toFixed(2);
         
-        return { success: true, rate: finalTwdRate, details: `${coinUsdPrice.toFixed(4)} USD * ${usdTwdRate.toFixed(2)} TWD` };
+        return { success: true, rate: finalTwdRate, details: `${coinUsdPrice.toFixed(4)} USD * ${usdTwdRate.toFixed(2)} TWD (${calculationMethod})` };
 
     } catch (error) {
         console.error('Error fetching historical rate via Yahoo:', error.message);
