@@ -1,0 +1,23 @@
+body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+        .container { background-color: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 700px; width: 90%; text-align: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        h1 { color: #4CAF50; margin-bottom: 20px; font-size: 2.2em; }
+        h2 { color: #333; margin-bottom: 20px; font-size: 1.8em; }
+        p { font-size: 1.1em; line-height: 1.6; margin-bottom: 15px; }
+        .disclaimer { color: #888; font-size: 0.9em; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
+        .button-group { margin-top: 30px; display: flex; justify-content: center; gap: 15px; }
+        .button { background-color: #007bff; color: white; padding: 12px 25px; border: none; border-radius: 5px; font-size: 1.1em; cursor: pointer; transition: background-color 0.3s ease; }
+        .button.secondary { background-color: #6c757d; }
+        .button:hover { background-color: #0056b3; }
+        .button.secondary:hover { background-color: #545b62; }
+        .button:disabled { background-color: #a0c4ff; cursor: not-allowed; }
+        .input-group { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+        input[type="password"], input[type="text"] { width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box; }
+        .hidden { display: none !important; }
+        .error-message { color: #dc3545; font-size: 0.9em; margin-top: -10px; margin-bottom: 10px; }
+        .success-message { color: #28a745; font-size: 0.9em; margin-top: -10px; margin-bottom: 10px; }
+        .api-section { border: 1px solid #eee; padding: 20px; border-radius: 8px; margin-bottom: 20px; background-color: #fafafa; }
+        .api-section h3 { margin-top: 0; font-size: 1.2em; color: #555; }
+        .test-result { margin-top: 5px; font-weight: bold; }
+        .lock-icon { color: #007bff; font-size: 4em; margin-bottom: 20px; }
+    
+        .dashboard-layout { display: flex; width: 100vw; height: 100vh; }
