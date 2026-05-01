@@ -437,7 +437,7 @@ let currentLumenApiKeys = null;
                 // Ensure we use the correct global API object
                 const electronApiObj = window.electronAPI || api;
                 if (electronApiObj && electronApiObj.getHistoricalRate) {
-                    const rateRes = await electronApiObj.getHistoricalRate(date);
+                    const rateRes = await electronApiObj.getHistoricalRate(date, coin);
                     if (rateRes && rateRes.success) {
                         caseTransactions[newTxIndex].dailyRate = rateRes.rate;
                     } else {

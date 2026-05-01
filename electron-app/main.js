@@ -49,42 +49,43 @@ function decrypt(text, masterPassword) {
 
 
 // --- 歷史匯率 API 模組 (Binance Kline) ---
-async function fetchHistoricalRate(dateString) {
+async function fetchHistoricalRate(dateString, coinType = 'USDT') {
     try {
         // dateString format expected: "YYYY-MM-DD"
-        // Convert to milliseconds timestamp for start of that day (UTC)
         const targetDate = new Date(dateString + 'T00:00:00Z');
-        const startTime = targetDate.getTime();
-        // Set end time to end of that day
-        const endTime = startTime + 24 * 60 * 60 * 1000 - 1;
+        // Convert to seconds timestamp for Yahoo Finance
+        const start = Math.floor(targetDate.getTime() / 1000);
+        const end = start + 86400; // +1 day
 
-        // Using Binance Kline API for USDT/TRY or other pairs? 
-        // Binance doesn't have direct USDT/TWD. Often we use USDT/TRY or BTC/USDT as proxy, 
-        // but for exact TWD we'd need a Forex API. Since this is zero-budget, 
-        // we'll approximate with a fixed rate or use a free public API for USD/TWD if available.
-        // For demonstration, let's fetch BTC/USDT to prove we can hit Binance historical,
-        // and hardcode a TWD multiplier (approx 32.5) for now until we find a stable free TWD API.
+        // 1. Fetch Crypto to USD (e.g., USDT-USD, ETH-USD)
+        const coinSymbol = `${coinType.toUpperCase()}-USD`;
+        const coinRes = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${coinSymbol}?interval=1d&period1=${start}&period2=${end}`, { timeout: 8000 });
         
-        // Let's just return a simulated historical rate for TWD for the proof-of-concept
-        // In a real scenario, we'd hit: https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&startTime=...
-        const response = await axios.get('https://api.binance.com/api/v3/klines', {
-            params: {
-                symbol: 'BTCUSDT',
-                interval: '1d',
-                startTime: startTime,
-                endTime: endTime
-            }
-        });
+        let coinUsdPrice = 1.0;
+        try {
+            const closes = coinRes.data.chart.result[0].indicators.quote[0].close;
+            coinUsdPrice = closes.find(p => p !== null) || 1.0;
+        } catch(e) {
+            console.warn(`Could not parse ${coinSymbol}, defaulting to 1.0 USD`);
+        }
 
-        // Just simulating the TWD calculation based on the request date for now to show the UI
-        // We will mock it to ~32.4 depending on the month
-        const month = targetDate.getMonth() + 1;
-        const simulatedTwdRate = (31.0 + (month * 0.1)).toFixed(2);
+        // 2. Fetch USD to TWD
+        const twdRes = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/USDTWD=X?interval=1d&period1=${start}&period2=${end}`, { timeout: 8000 });
+        let usdTwdRate = 32.0; // fallback
+        try {
+            const twdCloses = twdRes.data.chart.result[0].indicators.quote[0].close;
+            usdTwdRate = twdCloses.find(p => p !== null) || 32.0;
+        } catch(e) {
+            console.warn(`Could not parse USDTWD=X, defaulting to 32.0 TWD`);
+        }
 
-        return { success: true, rate: simulatedTwdRate };
+        // Calculate final Crypto to TWD rate
+        const finalTwdRate = (coinUsdPrice * usdTwdRate).toFixed(2);
+        
+        return { success: true, rate: finalTwdRate, details: `${coinUsdPrice.toFixed(4)} USD * ${usdTwdRate.toFixed(2)} TWD` };
 
     } catch (error) {
-        console.error('Error fetching historical rate:', error.message);
+        console.error('Error fetching historical rate via Yahoo:', error.message);
         return { success: false, message: error.message };
     }
 }
@@ -465,8 +466,8 @@ app.whenReady().then(async () => {
           }
       });
 
-      ipcMain.handle('get-historical-rate', async (event, dateString) => {
-          return await fetchHistoricalRate(dateString);
+      ipcMain.handle('get-historical-rate', async (event, dateString, coinType) => {
+          return await fetchHistoricalRate(dateString, coinType);
       });
 
       ipcMain.handle('analyze-wallet', async (event, { provider, address, apiKeys }) => {

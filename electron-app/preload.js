@@ -12,5 +12,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveCaseInternal: (data) => ipcRenderer.invoke('save-case-internal', data),
     getAllCases: () => ipcRenderer.invoke('get-all-cases'),
     loadCaseInternal: (caseId) => ipcRenderer.invoke('load-case-internal', caseId),
-    getHistoricalRate: (dateString) => ipcRenderer.invoke('get-historical-rate', dateString)
+    getHistoricalRate: (dateString, coinType) => ipcRenderer.invoke('get-historical-rate', dateString, coinType)
 });
