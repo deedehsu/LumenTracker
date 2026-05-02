@@ -55,7 +55,24 @@ async def search_and_extract_judgments(keyword, max_results=10, output_format="j
 
     try:
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+                    
+            launch_args = {"headless": True}
+            if getattr(sys, 'frozen', False):
+                import glob
+                local_app_data = os.environ.get('LOCALAPPDATA', '')
+                if local_app_data:
+                    # Find chromium headless shell
+                    search_pattern = os.path.join(local_app_data, "ms-playwright", "chromium_headless_shell-*", "chrome-headless-shell-win64", "chrome-headless-shell.exe")
+                    found_browsers = glob.glob(search_pattern)
+                    if not found_browsers:
+                        search_pattern = os.path.join(local_app_data, "ms-playwright", "chromium-*", "chrome-win", "chrome.exe")
+                        found_browsers = glob.glob(search_pattern)
+                    if found_browsers:
+                        launch_args["executable_path"] = found_browsers[0]
+                    else:
+                        print("WARNING: Could not find Playwright browsers in LOCALAPPDATA")
+                        
+            browser = await p.chromium.launch(**launch_args)
             context = await browser.new_context(
                 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             )
