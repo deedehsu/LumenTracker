@@ -1,3 +1,8 @@
+import os
+import sys
+# [PyInstaller Fix] Force Playwright to use the system-wide browser cache instead of the temporary _MEI folder
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"
+
 
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
