@@ -12,17 +12,18 @@
 2. **安裝所需套件**：
    打開 Windows 的「命令提示字元 (cmd)」或 PowerShell，輸入以下指令安裝套件：
    ```cmd
-   pip install requests beautifulsoup4 markdownify pyinstaller
+   pip install requests beautifulsoup4 markdownify pyinstaller playwright
+   playwright install
    ```
 
-3. **執行打包指令**：
-   在命令提示字元中，切換到該資料夾（例如 `cd C:\LumenTracker\skills\browser-automation`），然後執行這行魔法指令：
+3. **執行打包指令 (重要：必須包含 Playwright 瀏覽器)**：
+   在命令提示字元中，切換到該資料夾（例如 `cd C:\LumenTracker\skills\browser-automation`）。
+   因為工具使用了 Playwright 進行自動化爬蟲，我們必須在打包時把內建的 Chromium 瀏覽器一併打包進去。
+   請執行以下指令：
    ```cmd
-   pyinstaller --onefile --windowed --icon=app.ico --name LumenGatherer gui_extractor.py
+   pyinstaller --onefile --windowed --name LumenGatherer --add-data "%LOCALAPPDATA%\ms-playwright\chromium-1105\chrome-win\*;playwright\driver\package\.local-browsers\chromium-1105\chrome-win" gui_extractor.py
    ```
-   *   `--onefile`：把所有依賴套件打包成單一個乾淨的 `.exe` 檔。
-   *   `--windowed`：執行時不要跳出黑色的駭客終端機視窗，只顯示我們漂亮的 GUI。
-   *   `--name`：設定軟體名稱為 LumenGatherer。
+   *(註：上面的 `chromium-1105` 號碼可能會因 Playwright 版本不同而變，請先去 `%LOCALAPPDATA%\ms-playwright` 資料夾看一下實際的名稱)*
 
 4. **取得您的獨立程式**：
    打包完成後，您會在資料夾裡面看到一個名為 **`dist`** 的新目錄。
