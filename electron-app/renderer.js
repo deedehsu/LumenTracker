@@ -20,7 +20,7 @@ let currentLumenApiKeys = null;
 
         // Helper: Hide all screens
         function hideAllScreens() {
-            const screens = ['screenWelcome', 'screenUserSetup', 'screenPasswordSetup', 'screenApiSetup', 'screenLogin', 'screenCaseHub', 'screenCaseWorkspace', 'screenAnalysisDashboard', 'mainDashboard'];
+            const screens = ['screenWelcome', 'screenUserSetup', 'screenPasswordSetup', 'screenApiSetup', 'screenLogin', 'screenCaseHub', 'screenCaseWorkspace', 'screenAnalysisDashboard', 'screenTracingCanvas', 'mainDashboard'];
             screens.forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.classList.add('hidden');
@@ -492,7 +492,7 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 }
                 
                 hideAllScreens();
-                document.getElementById('screenAnalysisDashboard').classList.remove('hidden');
+                document.getElementById('screenAnalysisDashboard', 'screenTracingCanvas').classList.remove('hidden');
                 
                 const caseInfoEl = document.getElementById('ui7CaseInfo');
                 const headerInfoEl = document.getElementById('headerCaseInfo');
@@ -517,7 +517,7 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             }
         });
 
-        document.getElementById('btnBackToUi6')?.addEventListener('click', () => {
+        document.getElementById('btnBackToUi7')?.addEventListener('click', () => {
             showScreen('screenCaseWorkspace');
         });
 
@@ -887,3 +887,22 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 }
             });
         }
+        document.getElementById('btnBackToUi7')?.addEventListener('click', () => {
+            showScreen('screenCaseWorkspace');
+        });
+
+        document.getElementById('btnEnterCanvas')?.addEventListener('click', () => {
+            hideAllScreens();
+            document.getElementById('screenTracingCanvas').classList.remove('hidden');
+            
+            if(typeof initGraph === 'function') {
+                initGraph();
+            }
+            if(typeof populateReconciliation === 'function') {
+                populateReconciliation();
+            }
+        });
+
+        document.getElementById('btnBackToUi7')?.addEventListener('click', () => {
+            showScreen('screenAnalysisDashboard');
+        });
