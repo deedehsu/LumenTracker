@@ -940,6 +940,11 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             }
 
             if (txResult && txResult.success && txResult.transactions) {
+                if (txResult.transactions.length === 0) {
+                    document.getElementById('ui7NodeTxs').innerHTML = "<div style='text-align:center; padding: 40px; color: #888;'>此錢包尚無相關交易紀錄。</div>";
+                    return;
+                }
+
                 let volumeWarning = '';
                 if (txResult.isHighVolume) {
                     volumeWarning = '<div style="background-color: #ffeeba; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 15px; font-size: 0.85em;"><strong>⚠️ 高頻巨量交易節點</strong><br>此地址交易量已達上限 (1000筆)，極可能為水庫或混幣器。目前僅顯示最新 50 筆。</div>';
