@@ -877,21 +877,32 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
 
             try {
                 const apiObj = window.electronAPI || window.api;
-                if (!currentLumenApiKeys || !currentLumenApiKeys.etherscan) {
-                    throw new Error("請先在設定中綁定 Etherscan API Key。");
+                
+                // Auto-detect chain based on address format
+                let targetProvider = 'etherscan';
+                if (address.startsWith('T') && address.length === 34) {
+                    targetProvider = 'tronscan';
+                }
+                
+                if (targetProvider === 'etherscan' && (!currentLumenApiKeys || !currentLumenApiKeys.etherscan)) {
+                    throw new Error("此為以太坊地址，請先在設定中綁定 Etherscan API Key。");
+                }
+                if (targetProvider === 'tronscan' && (!currentLumenApiKeys || !currentLumenApiKeys.tronscan)) {
+                    // We allow Tronscan without API key sometimes, but better to enforce if it's required by our backend
+                    // Actually, Tronscan public API often works without a key, but let's pass it anyway.
                 }
                 
                 const result = await apiObj.analyzeWallet({
-                    provider: 'etherscan',
+                    provider: targetProvider,
                     address: address,
-                    apiKeys: currentLumenApiKeys
+                    apiKeys: currentLumenApiKeys || {}
                 });
 
                 if (result.success && result.profile) {
                     const txResult = await apiObj.fetchTransactions({
-                        provider: 'etherscan',
+                        provider: targetProvider,
                         address: address,
-                        apiKeys: currentLumenApiKeys
+                        apiKeys: currentLumenApiKeys || {}
                     });
                     
                     // Save to memory cache
