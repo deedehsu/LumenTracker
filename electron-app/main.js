@@ -407,8 +407,8 @@ async function fetchTransactionsTronscan(apiKey, address) {
                 to: tx.to_address,
                 value: tx.quant, // Already considering decimals? Tronscan quant is raw. We need to handle decimals.
                 // USDT has 6 decimals on TRON
-                decimals: tx.tokenInfo.tokenDecimal || 6,
-                symbol: tx.tokenInfo.tokenAbbr || 'USDT'
+                decimals: (tx.tokenInfo && tx.tokenInfo.tokenDecimal !== undefined) ? tx.tokenInfo.tokenDecimal : 6,
+                symbol: (tx.tokenInfo && tx.tokenInfo.tokenAbbr) ? tx.tokenInfo.tokenAbbr : 'USDT'
             }));
             
             return {
