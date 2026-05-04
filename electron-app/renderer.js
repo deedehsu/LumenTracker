@@ -495,13 +495,53 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 }
                 
                 hideAllScreens();
-                document.getElementById('screenAnalysisDashboard', 'screenTracingCanvas').classList.remove('hidden');
+                document.getElementById('screenAnalysisDashboard').classList.remove('hidden');
                 
-                const caseInfoEl = document.getElementById('ui7CaseInfo');
-                const headerInfoEl = document.getElementById('headerCaseInfo');
-                if(caseInfoEl && headerInfoEl) {
-                    caseInfoEl.textContent = headerInfoEl.textContent;
+                // Update UI 7 summary data
+                const elWalletCount = document.getElementById('ui7SummaryWalletCount');
+                if (elWalletCount) elWalletCount.textContent = caseWallets.length;
+                
+                const elTxCount = document.getElementById('ui7SummaryTxCount');
+                if (elTxCount) elTxCount.textContent = caseTransactions.length;
+                
+                let totalTwd = 0;
+                caseTransactions.forEach(tx => totalTwd += parseFloat(tx.twd || 0));
+                const elTwd = document.getElementById('ui7SummaryTwd');
+                if (elTwd) elTwd.textContent = '$' + totalTwd.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                
+                if(document.getElementById('ui7HeaderCaseInfo') && document.getElementById('headerCaseInfo')) {
+                    document.getElementById('ui7HeaderCaseInfo').textContent = document.getElementById('headerCaseInfo').textContent;
                 }
+                
+                // Populate UI 7 Left Panel (Wallet List)
+                const walletListEl = document.getElementById('ui7WalletList');
+                if (walletListEl) {
+                    walletListEl.innerHTML = '';
+                    if (caseWallets.length === 0) {
+                        walletListEl.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">尚無錢包紀錄</div>';
+                    } else {
+                        caseWallets.forEach((w, idx) => {
+                            const card = document.createElement('div');
+                            card.style.cssText = 'padding: 12px; border: 1px solid #dee2e6; border-radius: 6px; background-color: #f8f9fa; cursor: pointer; transition: all 0.2s;';
+                            card.onmouseover = () => card.style.borderColor = '#007bff';
+                            card.onmouseout = () => card.style.borderColor = '#dee2e6';
+                            card.onclick = () => window.analyzeWalletUi7(w.address);
+                            
+                            card.innerHTML = `
+                                <div style="font-family: monospace; font-weight: bold; color: #007bff; word-break: break-all; font-size: 0.9em; margin-bottom: 5px;">${w.address}</div>
+                                <div style="font-size: 0.8em; color: #666;">📝 ${w.note || '無說明'}</div>
+                            `;
+                            walletListEl.appendChild(card);
+                        });
+                    }
+                }
+                
+                // Reset right panel
+                if(document.getElementById('ui7NodeAddress')) document.getElementById('ui7NodeAddress').textContent = '請自左側選擇錢包';
+                if(document.getElementById('ui7NodeAct')) document.getElementById('ui7NodeAct').textContent = 'N/A';
+                if(document.getElementById('ui7NodeGas')) document.getElementById('ui7NodeGas').textContent = 'N/A';
+                if(document.getElementById('ui7NodeApprove')) document.getElementById('ui7NodeApprove').textContent = 'N/A';
+                if(document.getElementById('ui7NodeTxs')) document.getElementById('ui7NodeTxs').innerHTML = '<div style="text-align:center; padding: 40px; color: #aaa;">點擊左側錢包地址以調閱歷史交易紀錄...</div>';
                 
                 if(typeof initGraph === 'function') {
                     initGraph();
