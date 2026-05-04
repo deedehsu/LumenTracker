@@ -948,17 +948,31 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 let txHtml = volumeWarning + '<table style="width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: left;"><thead><tr style="border-bottom: 2px solid #eee;"><th style="padding: 8px;">時間</th><th style="padding: 8px;">方向/金額</th><th style="padding: 8px;">對手地址</th></tr></thead><tbody>';
                 
                 txResult.transactions.forEach(tx => {
-                    const date = new Date(tx.timeStamp * 1000);
-                    const timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-                    let val = 0;
+                    // Safe parsing for date to prevent NaN
+                    let date;
+                    if (tx.timeStamp && !isNaN(tx.timeStamp)) {
+                        date = new Date(tx.timeStamp * 1000);
+                    } else {
+                        date = new Date(); // fallback to prevent NaN string
+                    }
+                    const timeStr = isNaN(date.getTime()) ? "時間未定" : `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                    
+                    let val = "0.00";
                     let symbol = 'ETH';
+                    
                     if (tx.decimals) {
                         // TRC20 format
-                        val = (parseFloat(tx.value) / Math.pow(10, tx.decimals)).toFixed(2);
+                        const parsedVal = parseFloat(tx.value);
+                        if (!isNaN(parsedVal)) {
+                            val = (parsedVal / Math.pow(10, tx.decimals)).toFixed(2);
+                        }
                         symbol = tx.symbol || 'USDT';
                     } else {
                         // ERC20 Native format
-                        val = (parseFloat(tx.value) / 1e18).toFixed(4);
+                        const parsedVal = parseFloat(tx.value);
+                        if (!isNaN(parsedVal)) {
+                            val = (parsedVal / 1e18).toFixed(4);
+                        }
                     }
 
                     // Safe fallback if from/to are undefined
