@@ -329,45 +329,46 @@ app.whenReady().then(async () => {
 async function analyzeWalletTronscan(apiKey, address) {
     try {
         const headers = apiKey ? { 'TRON-PRO-API-KEY': apiKey } : {};
-        // Get account info for activation and approvals
-        const resInfo = await axios.get('https://apilist.tronscanapi.com/api/accountv2', {
-            params: { address: address },
-            headers: headers,
-            timeout: 8000
-        });
-
-        const data = resInfo.data;
-        let actTime = '無紀錄';
-        if (data.date_created && data.date_created > 0) {
-            const d = new Date(data.date_created);
-            actTime = `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-        }
-        
-        let approvals = 0;
-        if (data.trc20token_balances) {
-            // Rough estimate or we skip it since TRON approve checking requires deep contract scans
-            // Just return N/A or actual if available
-            approvals = "尚未支援 (TRX)"; 
-        }
-
-        // Get top gas source from normal txs
+        let actTime = '無紀錄 (API 限制)';
+        let approvals = "尚未支援 (TRX)"; 
         let topGas = '無';
-        const resTxs = await axios.get('https://apilist.tronscanapi.com/api/transaction', {
-            params: { sort: '-timestamp', count: true, limit: 50, start: 0, address: address },
-            headers: headers,
-            timeout: 8000
-        });
-        
-        if (resTxs.data && resTxs.data.data) {
-            const funders = {};
-            resTxs.data.data.forEach(tx => {
-                if (tx.toAddress === address && tx.contractData && tx.contractData.amount) {
-                    funders[tx.ownerAddress] = (funders[tx.ownerAddress] || 0) + parseFloat(tx.contractData.amount);
-                }
+
+        try {
+            // Get account info for activation and approvals
+            const resInfo = await axios.get('https://apilist.tronscanapi.com/api/accountv2', {
+                params: { address: address },
+                headers: headers,
+                timeout: 8000
             });
-            if (Object.keys(funders).length > 0) {
-                topGas = Object.keys(funders).reduce((a, b) => funders[a] > funders[b] ? a : b);
+            const data = resInfo.data;
+            if (data.date_created && data.date_created > 0) {
+                const d = new Date(data.date_created);
+                actTime = `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
             }
+        } catch(e) {
+            console.warn("Tronscan accountv2 API failed, might require Pro API Key:", e.message);
+        }
+
+        try {
+            // Get top gas source from normal txs
+            const resTxs = await axios.get('https://apilist.tronscanapi.com/api/transaction', {
+                params: { sort: '-timestamp', count: true, limit: 50, start: 0, address: address },
+                headers: headers,
+                timeout: 8000
+            });
+            if (resTxs.data && resTxs.data.data) {
+                const funders = {};
+                resTxs.data.data.forEach(tx => {
+                    if (tx.toAddress === address && tx.contractData && tx.contractData.amount) {
+                        funders[tx.ownerAddress] = (funders[tx.ownerAddress] || 0) + parseFloat(tx.contractData.amount);
+                    }
+                });
+                if (Object.keys(funders).length > 0) {
+                    topGas = Object.keys(funders).reduce((a, b) => funders[a] > funders[b] ? a : b);
+                }
+            }
+        } catch(e) {
+            console.warn("Tronscan transaction API failed:", e.message);
         }
 
         return {
