@@ -950,17 +950,31 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 txResult.transactions.forEach(tx => {
                     const date = new Date(tx.timeStamp * 1000);
                     const timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-                    const val = (parseFloat(tx.value) / 1e18).toFixed(4);
-                    const isOut = tx.from.toLowerCase() === address.toLowerCase();
+                    let val = 0;
+                    let symbol = 'ETH';
+                    if (tx.decimals) {
+                        // TRC20 format
+                        val = (parseFloat(tx.value) / Math.pow(10, tx.decimals)).toFixed(2);
+                        symbol = tx.symbol || 'USDT';
+                    } else {
+                        // ERC20 Native format
+                        val = (parseFloat(tx.value) / 1e18).toFixed(4);
+                    }
+
+                    // Safe fallback if from/to are undefined
+                    const safeFrom = tx.from || '';
+                    const safeTo = tx.to || '';
+                    
+                    const isOut = safeFrom.toLowerCase() === address.toLowerCase();
                     const directionIcon = isOut ? '📤 出金' : '📥 入金';
                     const color = isOut ? '#dc3545' : '#28a745';
-                    const counterpart = isOut ? tx.to : tx.from;
+                    const counterpart = isOut ? safeTo : safeFrom;
                     
                     txHtml += `
                         <tr style="border-bottom: 1px solid #f0f0f0;">
                             <td style="padding: 8px; color: #666; font-size: 0.85em;">${timeStr}</td>
-                            <td style="padding: 8px; font-weight: bold; color: ${color};">${directionIcon} ${val} ETH</td>
-                            <td style="padding: 8px; font-family: monospace; color: #555;">${counterpart.substring(0,16)}...</td>
+                            <td style="padding: 8px; font-weight: bold; color: ${color};">${directionIcon} ${val} ${symbol}</td>
+                            <td style="padding: 8px; font-family: monospace; color: #555;" title="${counterpart}">${counterpart.substring(0,12)}...</td>
                         </tr>
                     `;
                 });
