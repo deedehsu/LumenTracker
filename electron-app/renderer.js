@@ -989,12 +989,18 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                     const color = isOut ? '#dc3545' : '#28a745';
                     const counterpart = isOut ? safeTo : safeFrom;
                     
+                    // Prevent substring errors if counterpart is too short
+                    let displayAddress = counterpart;
+                    if (counterpart && counterpart.length > 15) {
+                        displayAddress = counterpart.substring(0,8) + '...' + counterpart.substring(counterpart.length-6);
+                    }
+                    
                     txHtml += `
                         <tr style="border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.backgroundColor='#f1f8ff'" onmouseout="this.style.backgroundColor='transparent'">
                             <td style="padding: 8px; color: #666; font-size: 0.85em;">${timeStr}</td>
                             <td style="padding: 8px; font-weight: bold; color: ${color};">${directionIcon} ${val} <span style="font-size:0.8em; color:#888;">${symbol}</span></td>
                             <td style="padding: 8px; font-family: monospace; color: #555;" title="${counterpart}">
-                                ${counterpart.substring(0,8)}...${counterpart.substring(counterpart.length-6)}
+                                ${displayAddress}
                                 <button onclick="navigator.clipboard.writeText('${counterpart}'); alert('已複製地址');" style="background:none;border:none;cursor:pointer;font-size:1.1em;" title="複製完整地址">📋</button>
                             </td>
                             <td style="padding: 8px; text-align: center;">
