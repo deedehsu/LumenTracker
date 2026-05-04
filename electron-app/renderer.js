@@ -866,9 +866,8 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             // Check memory cache first
             if (apiResponseCache[address]) {
                 console.log(`[Cache Hit] Serving data for ${address} from local cache.`);
-                // renderWalletProfile(address, apiResponseCache[address].profile, apiResponseCache[address].txs);
-                // return;
-                console.log("CACHE DISABLED FOR DEBUGGING");
+                renderWalletProfile(address, apiResponseCache[address].profile, apiResponseCache[address].txs);
+                return;
             }
 
             if(document.getElementById('ui7NodeAct')) document.getElementById('ui7NodeAct').textContent = "掃描中...";
@@ -957,46 +956,50 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 let txHtml = volumeWarning + '<table style="width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: left;"><thead><tr style="border-bottom: 2px solid #eee;"><th style="padding: 8px; width: 25%;">時間</th><th style="padding: 8px; width: 20%;">方向/金額</th><th style="padding: 8px; width: 35%;">對手地址</th><th style="padding: 8px; width: 20%; text-align: center;">操作</th></tr></thead><tbody>';
                 
                 txResult.transactions.forEach(tx => {
-                    // Safe parsing for date to prevent NaN
+                    // 終極變數映射：確保 Etherscan 與 Tronscan 的資料都能被正確讀取
+                    // Etherscan uses 'timeStamp', Tronscan might pass it correctly now but let's be bulletproof.
+                    const rawTs = tx.timeStamp || tx.block_ts || Math.floor(Date.now() / 1000);
+                    const rawFrom = tx.from || tx.from_address || '';
+                    const rawTo = tx.to || tx.to_address || '';
+                    const rawValue = tx.value || tx.quant || '0';
+                    const rawDecimals = tx.decimals !== undefined ? tx.decimals : (tx.tokenInfo ? tx.tokenInfo.tokenDecimal : 18);
+                    const rawSymbol = tx.symbol || (tx.tokenInfo ? tx.tokenInfo.tokenAbbr : 'ETH');
+
                     let date;
-                    if (tx.timeStamp && !isNaN(tx.timeStamp)) {
-                        date = new Date(tx.timeStamp * 1000);
+                    if (!isNaN(rawTs)) {
+                        // Ensure we don't multiply by 1000 if it's already in milliseconds (13 digits)
+                        const tsNum = Number(rawTs);
+                        date = new Date(tsNum > 9999999999 ? tsNum : tsNum * 1000);
                     } else {
-                        date = new Date(); // fallback to prevent NaN string
+                        date = new Date();
                     }
+                    
                     const timeStr = isNaN(date.getTime()) ? "時間未定" : `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
                     
                     let val = "0.00";
-                    let symbol = 'ETH';
+                    const parsedVal = parseFloat(rawValue);
                     
-                    if (tx.decimals) {
-                        // TRC20 format
-                        const parsedVal = parseFloat(tx.value);
-                        if (!isNaN(parsedVal)) {
-                            val = (parsedVal / Math.pow(10, tx.decimals)).toFixed(2);
-                        }
-                        symbol = tx.symbol || 'USDT';
-                    } else {
-                        // ERC20 Native format
-                        const parsedVal = parseFloat(tx.value);
-                        if (!isNaN(parsedVal)) {
-                            val = (parsedVal / 1e18).toFixed(4);
+                    if (!isNaN(parsedVal)) {
+                        // If it's TRON (decimals usually 6) or ETH (decimals 18)
+                        if (rawDecimals === 6 || rawSymbol.toUpperCase().includes('USDT')) {
+                            val = (parsedVal / Math.pow(10, 6)).toFixed(2);
+                        } else {
+                            val = (parsedVal / Math.pow(10, rawDecimals)).toFixed(4);
                         }
                     }
-
-                    // Safe fallback if from/to are undefined
-                    const safeFrom = tx.from || '';
-                    const safeTo = tx.to || '';
                     
-                    const isOut = safeFrom.toLowerCase() === address.toLowerCase();
+                    const symbol = rawSymbol.toUpperCase();
+
+                    const isOut = rawFrom.toLowerCase() === address.toLowerCase();
                     const directionIcon = isOut ? '📤 出金' : '📥 入金';
                     const color = isOut ? '#dc3545' : '#28a745';
-                    const counterpart = isOut ? safeTo : safeFrom;
+                    const counterpart = isOut ? rawTo : rawFrom;
                     
-                    // Prevent substring errors if counterpart is too short
                     let displayAddress = counterpart;
                     if (counterpart && counterpart.length > 15) {
                         displayAddress = counterpart.substring(0,8) + '...' + counterpart.substring(counterpart.length-6);
+                    } else if (!counterpart) {
+                        displayAddress = "未知地址";
                     }
                     
                     txHtml += `
