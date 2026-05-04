@@ -1,3 +1,4 @@
+let apiResponseCache = {};
 let currentLumenApiKeys = null;
         const api = window.electronAPI;
 
@@ -209,7 +210,8 @@ let currentLumenApiKeys = null;
         // --- UI 5: Case Hub Actions (Placeholders for UI 6) ---
                 document.getElementById('btnCreateCase')?.addEventListener('click', () => {
             try {
-                currentActiveCaseId = null; // Reset for new case
+                currentActiveCaseId = null;
+                apiResponseCache = {}; // Reset cache
                 
                 const summaryEl = document.getElementById('wsCaseSummary');
                 if (summaryEl) summaryEl.value = '';
@@ -913,6 +915,14 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
 
         window.analyzeWalletUi7 = async function(address) {
             if(document.getElementById('ui7NodeAddress')) document.getElementById('ui7NodeAddress').textContent = address;
+            
+            // Check memory cache first
+            if (apiResponseCache[address]) {
+                console.log(`[Cache Hit] Serving data for ${address} from local cache.`);
+                renderWalletProfile(address, apiResponseCache[address].profile, apiResponseCache[address].txs);
+                return;
+            }
+
             if(document.getElementById('ui7NodeAct')) document.getElementById('ui7NodeAct').textContent = "掃描中...";
             if(document.getElementById('ui7NodeGas')) document.getElementById('ui7NodeGas').textContent = "掃描中...";
             if(document.getElementById('ui7NodeApprove')) document.getElementById('ui7NodeApprove').textContent = "掃描中...";
@@ -931,57 +941,19 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 });
 
                 if (result.success && result.profile) {
-                    const p = result.profile;
-                    if(document.getElementById('ui7NodeAct')) document.getElementById('ui7NodeAct').textContent = p.activation_time;
-                    if(document.getElementById('ui7NodeGas')) document.getElementById('ui7NodeGas').textContent = p.top_gas_source;
-                    
-                    const approveEl = document.getElementById('ui7NodeApprove');
-                    if(approveEl) {
-                        approveEl.textContent = p.approvals_count;
-                        if (p.approvals_count > 0) {
-                            approveEl.style.color = '#dc3545';
-                        } else {
-                            approveEl.style.color = '#333';
-                        }
-                    }
-
                     const txResult = await apiObj.fetchTransactions({
                         provider: 'etherscan',
                         address: address,
                         apiKeys: currentLumenApiKeys
                     });
-
-                    if (txResult.success && txResult.transactions) {
-                        let volumeWarning = '';
-                        if (txResult.isHighVolume) {
-                            volumeWarning = '<div style="background-color: #ffeeba; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 15px; font-size: 0.85em;"><strong>⚠️ 高頻巨量交易節點</strong><br>此地址交易量已達上限 (1000筆)，極可能為水庫或混幣器。目前僅顯示最新 50 筆。</div>';
-                        }
-                        
-                        let txHtml = volumeWarning + '<table style="width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: left;"><thead><tr style="border-bottom: 2px solid #eee;"><th style="padding: 8px;">時間</th><th style="padding: 8px;">方向/金額</th><th style="padding: 8px;">對手地址</th></tr></thead><tbody>';
-                        
-                        txResult.transactions.forEach(tx => {
-                            const date = new Date(tx.timeStamp * 1000);
-                            const timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-                            const val = (parseFloat(tx.value) / 1e18).toFixed(4);
-                            const isOut = tx.from.toLowerCase() === address.toLowerCase();
-                            const directionIcon = isOut ? '📤 出金' : '📥 入金';
-                            const color = isOut ? '#dc3545' : '#28a745';
-                            const counterpart = isOut ? tx.to : tx.from;
-                            
-                            txHtml += `
-                                <tr style="border-bottom: 1px solid #f0f0f0;">
-                                    <td style="padding: 8px; color: #666; font-size: 0.85em;">${timeStr}</td>
-                                    <td style="padding: 8px; font-weight: bold; color: ${color};">${directionIcon} ${val} ETH</td>
-                                    <td style="padding: 8px; font-family: monospace; color: #555;">${counterpart.substring(0,16)}...</td>
-                                </tr>
-                            `;
-                        });
-                        
-                        txHtml += '</tbody></table>';
-                        document.getElementById('ui7NodeTxs').innerHTML = txHtml;
-                    } else {
-                        document.getElementById('ui7NodeTxs').innerHTML = "<div style='color: red; text-align:center; padding:20px;'>獲取交易明細失敗: " + txResult.message + "</div>";
-                    }
+                    
+                    // Save to memory cache
+                    apiResponseCache[address] = {
+                        profile: result.profile,
+                        txs: txResult
+                    };
+                    
+                    renderWalletProfile(address, result.profile, txResult);
 
                 } else {
                     throw new Error(result.message);
@@ -993,3 +965,52 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                 }
             }
         };
+
+        function renderWalletProfile(address, profile, txResult) {
+            const p = profile;
+            if(document.getElementById('ui7NodeAct')) document.getElementById('ui7NodeAct').textContent = p.activation_time;
+            if(document.getElementById('ui7NodeGas')) document.getElementById('ui7NodeGas').textContent = p.top_gas_source;
+            
+            const approveEl = document.getElementById('ui7NodeApprove');
+            if(approveEl) {
+                approveEl.textContent = p.approvals_count;
+                if (p.approvals_count > 0) {
+                    approveEl.style.color = '#dc3545';
+                } else {
+                    approveEl.style.color = '#333';
+                }
+            }
+
+            if (txResult && txResult.success && txResult.transactions) {
+                let volumeWarning = '';
+                if (txResult.isHighVolume) {
+                    volumeWarning = '<div style="background-color: #ffeeba; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 15px; font-size: 0.85em;"><strong>⚠️ 高頻巨量交易節點</strong><br>此地址交易量已達上限 (1000筆)，極可能為水庫或混幣器。目前僅顯示最新 50 筆。</div>';
+                }
+                
+                let txHtml = volumeWarning + '<table style="width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: left;"><thead><tr style="border-bottom: 2px solid #eee;"><th style="padding: 8px;">時間</th><th style="padding: 8px;">方向/金額</th><th style="padding: 8px;">對手地址</th></tr></thead><tbody>';
+                
+                txResult.transactions.forEach(tx => {
+                    const date = new Date(tx.timeStamp * 1000);
+                    const timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                    const val = (parseFloat(tx.value) / 1e18).toFixed(4);
+                    const isOut = tx.from.toLowerCase() === address.toLowerCase();
+                    const directionIcon = isOut ? '📤 出金' : '📥 入金';
+                    const color = isOut ? '#dc3545' : '#28a745';
+                    const counterpart = isOut ? tx.to : tx.from;
+                    
+                    txHtml += `
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 8px; color: #666; font-size: 0.85em;">${timeStr}</td>
+                            <td style="padding: 8px; font-weight: bold; color: ${color};">${directionIcon} ${val} ETH</td>
+                            <td style="padding: 8px; font-family: monospace; color: #555;">${counterpart.substring(0,16)}...</td>
+                        </tr>
+                    `;
+                });
+                
+                txHtml += '</tbody></table>';
+                document.getElementById('ui7NodeTxs').innerHTML = txHtml;
+            } else {
+                document.getElementById('ui7NodeTxs').innerHTML = "<div style='color: red; text-align:center; padding:20px;'>獲取交易明細失敗: " + (txResult ? txResult.message : "未知錯誤") + "</div>";
+            }
+        }
+
