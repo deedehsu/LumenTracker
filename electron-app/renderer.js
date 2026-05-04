@@ -442,6 +442,7 @@ let currentLumenApiKeys = null;
                     const rateRes = await electronApiObj.getHistoricalRate(date, coin);
                     if (rateRes && rateRes.success) {
                         caseTransactions[newTxIndex].dailyRate = rateRes.rate;
+                        caseTransactions[newTxIndex].dailyRateDetails = rateRes.details;
                     } else {
                         caseTransactions[newTxIndex].dailyRate = "無資料";
                     }
@@ -474,7 +475,7 @@ let currentLumenApiKeys = null;
                     <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${tx.twd.toLocaleString()}</td>
                     <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${tx.crypto} ${tx.coin}</td>
                     <td style="border: 1px solid #ddd; padding: 8px; text-align: right; color: #007bff; font-weight: bold;">${tx.txRate}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; color: #28a745;">${tx.dailyRate}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; color: #28a745;" title="${tx.dailyRateDetails || ''}">${tx.dailyRate}</td>
                     <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
                         <button onclick="window.removeTx(${index})" style="background:none; border:none; color:#dc3545; cursor:pointer; font-weight:bold;">刪除</button>
                     </td>
