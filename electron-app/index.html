@@ -314,28 +314,73 @@
             </div>
         </div>
 
-        <div style="flex: 1; padding: 30px; overflow-y: auto; background-color: #f0f2f5;">
-            <div style="max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                <h2 style="color: #333; text-align: center; margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 10px;">案件鑑識總覽</h2>
+        <div style="flex: 1; display: flex; flex-direction: row; background-color: #f0f2f5;">
+            
+            <!-- UI 7 左側：案件錢包清單 -->
+            <div style="width: 350px; background-color: #fff; border-right: 1px solid #ccc; display: flex; flex-direction: column;">
+                <div style="padding: 15px; background-color: #e9ecef; border-bottom: 1px solid #ccc;">
+                    <h3 style="margin: 0; color: #333; font-size: 1.2em;">📁 涉案錢包清單</h3>
+                    <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;">點擊地址以進行鏈上剖析</p>
+                </div>
+                <div id="ui7WalletList" style="flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+                    <!-- 動態生成錢包卡片 -->
+                    <div style="text-align: center; padding: 20px; color: #999;">尚無錢包紀錄</div>
+                </div>
                 
-                <div style="display: flex; gap: 20px; margin-bottom: 30px;">
-                    <div style="flex: 1; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #ddd; text-align: center;">
-                        <h3 style="margin-top: 0; color: #555;">涉案錢包總數</h3>
-                        <p id="ui7SummaryWalletCount" style="font-size: 2em; font-weight: bold; color: #007bff; margin: 10px 0;">0</p>
+                <!-- 總覽資訊移到底部 -->
+                <div style="padding: 15px; background-color: #f8f9fa; border-top: 1px solid #eee;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 5px;">
+                        <span>錢包總數:</span><span id="ui7SummaryWalletCount" style="font-weight: bold; color: #007bff;">0</span>
                     </div>
-                    <div style="flex: 1; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #ddd; text-align: center;">
-                        <h3 style="margin-top: 0; color: #555;">交易紀錄總數</h3>
-                        <p id="ui7SummaryTxCount" style="font-size: 2em; font-weight: bold; color: #28a745; margin: 10px 0;">0</p>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 5px;">
+                        <span>交易總數:</span><span id="ui7SummaryTxCount" style="font-weight: bold; color: #28a745;">0</span>
                     </div>
-                    <div style="flex: 1; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #ddd; text-align: center;">
-                        <h3 style="margin-top: 0; color: #555;">不法所得估算 (TWD)</h3>
-                        <p id="ui7SummaryTwd" style="font-size: 1.8em; font-weight: bold; color: #d32f2f; margin: 10px 0;">$0</p>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9em;">
+                        <span>不法所得估算:</span><span id="ui7SummaryTwd" style="font-weight: bold; color: #d32f2f;">$0</span>
                     </div>
                 </div>
+            </div>
 
-                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 30px; border-radius: 4px;">
-                    <h4 style="margin-top: 0; color: #856404;">⚠️ 數位資產法幣價值核定宣告</h4>
-                    <p style="font-size: 0.9em; color: #856404; margin-bottom: 0;">本案法幣價值核定採<strong>「雙軌高低均價計算核定法」</strong>。系統已自動向開源金融數據 (Yahoo Finance) 請求虛擬資產對美金及美金兌台幣之資料，並抓取雙邊當日「最高價」與「最低價」之平均值交乘，作為當日客觀之折算匯率，以確保法庭證據之客觀性。</p>
+            <!-- UI 7 右側：錢包剖析與交易紀錄 -->
+            <div style="flex: 1; display: flex; flex-direction: column; background-color: #fcfcfc;">
+                
+                <!-- 法幣價值核定宣告 -->
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 15px 15px 0 15px; border-radius: 4px;">
+                    <h4 style="margin: 0 0 5px 0; color: #856404; font-size: 0.95em;">⚠️ 數位資產法幣價值核定宣告</h4>
+                    <p style="font-size: 0.8em; color: #856404; margin: 0;">採「雙軌高低均價計算核定法」(Yahoo Finance OSINT)，確保法庭證據客觀性。</p>
+                </div>
+
+                <div style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+                    
+                    <!-- 節點剖析區 -->
+                    <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px;">
+                        <h3 style="margin-top: 0; color: #007bff; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;">🔍 錢包深度剖析</h3>
+                        <p style="font-size: 1.1em; font-family: monospace; font-weight: bold; color: #333; margin-bottom: 15px;" id="ui7NodeAddress">請自左側選擇錢包</p>
+                        
+                        <div style="display: flex; gap: 20px;">
+                            <div style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #eee;">
+                                <p style="margin: 0; font-size: 0.85em; color: #666;">啟用時間 (首次入金)</p>
+                                <p style="margin: 5px 0 0 0; font-weight: bold; font-size: 1.1em;" id="ui7NodeAct">N/A</p>
+                            </div>
+                            <div style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #eee;">
+                                <p style="margin: 0; font-size: 0.85em; color: #666;">Gas 手續費主要來源</p>
+                                <p style="margin: 5px 0 0 0; font-weight: bold; font-size: 1.1em;" id="ui7NodeGas">N/A</p>
+                            </div>
+                            <div style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #eee;">
+                                <p style="margin: 0; font-size: 0.85em; color: #666;">高危授權 (Approve) 次數</p>
+                                <p style="margin: 5px 0 0 0; font-weight: bold; font-size: 1.1em;" id="ui7NodeApprove">N/A</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 交易紀錄清單 -->
+                    <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex: 1; display: flex; flex-direction: column;">
+                        <h3 style="margin-top: 0; color: #28a745; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;">💸 鏈上真實交易紀錄 (API即時調閱)</h3>
+                        <div id="ui7NodeTxs" style="flex: 1; overflow-y: auto; padding-right: 5px;">
+                            <div style="text-align:center; padding: 40px; color: #aaa;">點擊左側錢包地址以調閱歷史交易紀錄...</div>
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
         </div>
@@ -399,16 +444,7 @@
                 
                 <div id="evidencePanelContent" style="flex-grow: 1; overflow-y: auto; padding: 15px;">
                     
-                    <!-- 節點剖析區 (動態更新) -->
-                    <div id="panelNodeProfile" style="margin-bottom: 20px; display: none;">
-                        <h5 style="margin-top: 0; color: #007bff; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">節點剖析</h5>
-                        <p style="font-size: 0.85em; font-family: monospace; word-break: break-all; margin-bottom: 5px;" id="panelNodeAddress">0x...</p>
-                        <div style="font-size: 0.85em; color: #555; background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 4px;">
-                            <p style="margin: 3px 0;"><strong>啟用時間:</strong> <span id="panelNodeAct">掃描中...</span></p>
-                            <p style="margin: 3px 0;"><strong>手續費來源:</strong> <span id="panelNodeGas">掃描中...</span></p>
-                        </div>
-                        <div id="panelNodeTxs" style="margin-top: 15px;"></div>
-                    </div>
+
 
                     <!-- 交易紀錄核對表 (Side-by-side) -->
                     <div id="panelReconciliation">

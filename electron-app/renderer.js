@@ -631,109 +631,15 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             
             // 畫布互動綁定：點擊節點
                         // 畫布互動綁定：點擊節點
-            cy.on('tap', 'node', async function(evt){
+            cy.on('tap', 'node', function(evt){
                 var node = evt.target;
-                
-                document.getElementById('tabApiTxs')?.click();
-                
-                const panelNodeProfile = document.getElementById('panelNodeProfile');
-                if (panelNodeProfile) panelNodeProfile.style.display = 'block';
-                
                 if(node.id() === 'victim') {
-                    if(document.getElementById('panelNodeAddress')) document.getElementById('panelNodeAddress').textContent = "報案中心 / 被害人";
-                    if(document.getElementById('panelNodeAct')) document.getElementById('panelNodeAct').textContent = "N/A";
-                    if(document.getElementById('panelNodeGas')) document.getElementById('panelNodeGas').textContent = "N/A";
-                    if(document.getElementById('panelNodeApprove')) document.getElementById('panelNodeApprove').textContent = "N/A";
-                    if(document.getElementById('panelNodeTxs')) document.getElementById('panelNodeTxs').innerHTML = "<div style='text-align:center; padding: 20px; color: #888;'>此為系統虛擬節點。<br>請點擊下方畫布中的真實錢包地址，進行 API 資料調閱。</div>";
+                    console.log("Clicked Victim Node");
                     return;
                 }
-
-                const address = node.id();
-                if(document.getElementById('panelNodeAddress')) document.getElementById('panelNodeAddress').textContent = address;
-                if(document.getElementById('panelNodeAct')) document.getElementById('panelNodeAct').textContent = "掃描中...";
-                if(document.getElementById('panelNodeGas')) document.getElementById('panelNodeGas').textContent = "掃描中...";
-                if(document.getElementById('panelNodeApprove')) document.getElementById('panelNodeApprove').textContent = "掃描中...";
-                if(document.getElementById('panelNodeTxs')) document.getElementById('panelNodeTxs').innerHTML = "<div style='text-align:center; padding: 20px; color: #888;'>正在向區塊鏈節點調閱歷史交易紀錄...<br>⏳</div>";
-
-                try {
-                    const apiObj = window.electronAPI || window.api;
-                    if (!currentLumenApiKeys || !currentLumenApiKeys.etherscan) {
-                        throw new Error("請先在設定中綁定 Etherscan API Key。");
-                    }
-                    
-                    const result = await apiObj.analyzeWallet({
-                        provider: 'etherscan',
-                        address: address,
-                        apiKeys: currentLumenApiKeys
-                    });
-
-                    if (result.success && result.profile) {
-                        const p = result.profile;
-                        if(document.getElementById('panelNodeAct')) document.getElementById('panelNodeAct').textContent = p.activation_time;
-                        if(document.getElementById('panelNodeGas')) document.getElementById('panelNodeGas').textContent = p.top_gas_source;
-                        
-                        const approveEl = document.getElementById('panelNodeApprove');
-                        if(approveEl) {
-                            approveEl.textContent = p.approvals_count;
-                            if (p.approvals_count > 0) {
-                                approveEl.style.color = '#dc3545';
-                                approveEl.style.fontWeight = 'bold';
-                            } else {
-                                approveEl.style.color = '#333';
-                                approveEl.style.fontWeight = 'normal';
-                            }
-                        }
-
-                        // 渲染真實交易清單 (供勾選)
-                        // 我們這裡先利用剛剛獲取的分析結果，呼叫 fetchTransactions 獲取詳細清單
-                        const txResult = await apiObj.fetchTransactions({
-                            provider: 'etherscan',
-                            address: address,
-                            apiKeys: currentLumenApiKeys
-                        });
-
-                        if (txResult.success && txResult.transactions) {
-                            let volumeWarning = '';
-                            if (txResult.isHighVolume) {
-                                volumeWarning = '<div style="background-color: #ffeeba; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 10px; font-size: 0.85em;"><strong>⚠️ 高頻巨量交易節點</strong><br>此地址交易量已達 Etherscan 免費 API 上限 (1000筆)，極可能為交易所熱錢包、混幣器或大型洗錢水庫。為節省系統資源，目前僅顯示最新 50 筆。</div>';
-                                if(document.getElementById('panelNodeAddress')) document.getElementById('panelNodeAddress').innerHTML += ' <span style="color:red; font-weight:bold;">[高危水庫]</span>';
-                            }
-                            let txHtml = volumeWarning + '<div style="margin-bottom: 10px; font-weight: bold; color: #28a745;">最新交易清單</div>';
-                            
-                            txResult.transactions.forEach(tx => {
-                                const date = new Date(tx.timeStamp * 1000);
-                                const timeStr = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-                                const val = (parseFloat(tx.value) / 1e18).toFixed(4);
-                                const isOut = tx.from.toLowerCase() === address.toLowerCase();
-                                const directionIcon = isOut ? '📤 出金' : '📥 入金';
-                                const color = isOut ? '#dc3545' : '#28a745';
-                                const counterpart = isOut ? tx.to : tx.from;
-                                
-                                txHtml += `
-                                <div style="border: 1px solid #eee; padding: 8px; margin-bottom: 5px; border-radius: 4px; display: flex; flex-direction: column; background-color: #fff;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                                        <span style="font-weight: bold; color: ${color};">${directionIcon} ${val} ETH</span>
-                                        <button class="button" style="padding: 3px 8px; font-size: 0.8em; background-color: #007bff;" onclick="window.addToGraph('${counterpart}', '${val} ETH', ${isOut})">➕ 加入畫布</button>
-                                    </div>
-                                    <div style="font-family: monospace; font-size: 0.9em; color: #555;">對手: ${counterpart.substring(0,16)}...</div>
-                                    <div style="font-size: 0.8em; color: #888;">📅 ${timeStr}</div>
-                                </div>`;
-                            });
-                            
-                            document.getElementById('panelNodeTxs').innerHTML = txHtml;
-                        } else {
-                            document.getElementById('panelNodeTxs').innerHTML = "<div style='color: red;'>獲取交易明細失敗: " + txResult.message + "</div>";
-                        }
-
-                    } else {
-                        throw new Error(result.message);
-                    }
-                } catch(e) {
-                    console.error(e);
-                    if(document.getElementById('panelNodeTxs')) {
-                        document.getElementById('panelNodeTxs').innerHTML = `<div style='text-align:center; padding: 20px; color: red;'>連線失敗。<br>${e.message}</div>`;
-                    }
-                }
+                console.log("Clicked Node in UI 8:", node.id());
+                // In UI 8, node profiling is disabled as it has been moved to UI 7.
+                // Future feature: highlight paths or show a small tooltip.
             });
 
             // 全域函數：讓動態產生的按鈕可以呼叫，將新節點加入畫布
