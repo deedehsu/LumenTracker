@@ -950,7 +950,7 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                     volumeWarning = '<div style="background-color: #ffeeba; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 15px; font-size: 0.85em;"><strong>⚠️ 高頻巨量交易節點</strong><br>此地址交易量已達上限 (1000筆)，極可能為水庫或混幣器。目前僅顯示最新 50 筆。</div>';
                 }
                 
-                let txHtml = volumeWarning + '<table style="width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: left;"><thead><tr style="border-bottom: 2px solid #eee;"><th style="padding: 8px;">時間</th><th style="padding: 8px;">方向/金額</th><th style="padding: 8px;">對手地址</th></tr></thead><tbody>';
+                let txHtml = volumeWarning + '<table style="width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: left;"><thead><tr style="border-bottom: 2px solid #eee;"><th style="padding: 8px; width: 25%;">時間</th><th style="padding: 8px; width: 20%;">方向/金額</th><th style="padding: 8px; width: 35%;">對手地址</th><th style="padding: 8px; width: 20%; text-align: center;">操作</th></tr></thead><tbody>';
                 
                 txResult.transactions.forEach(tx => {
                     // Safe parsing for date to prevent NaN
@@ -990,10 +990,16 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                     const counterpart = isOut ? safeTo : safeFrom;
                     
                     txHtml += `
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                        <tr style="border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.backgroundColor='#f1f8ff'" onmouseout="this.style.backgroundColor='transparent'">
                             <td style="padding: 8px; color: #666; font-size: 0.85em;">${timeStr}</td>
-                            <td style="padding: 8px; font-weight: bold; color: ${color};">${directionIcon} ${val} ${symbol}</td>
-                            <td style="padding: 8px; font-family: monospace; color: #555;" title="${counterpart}">${counterpart.substring(0,12)}...</td>
+                            <td style="padding: 8px; font-weight: bold; color: ${color};">${directionIcon} ${val} <span style="font-size:0.8em; color:#888;">${symbol}</span></td>
+                            <td style="padding: 8px; font-family: monospace; color: #555;" title="${counterpart}">
+                                ${counterpart.substring(0,8)}...${counterpart.substring(counterpart.length-6)}
+                                <button onclick="navigator.clipboard.writeText('${counterpart}'); alert('已複製地址');" style="background:none;border:none;cursor:pointer;font-size:1.1em;" title="複製完整地址">📋</button>
+                            </td>
+                            <td style="padding: 8px; text-align: center;">
+                                <button class="button" style="padding: 4px 10px; font-size: 0.8em; background-color: #007bff; border-radius: 4px; color: white; border: none; cursor: pointer;" onclick="window.addToGraph('${counterpart}', '${val} ${symbol}', ${isOut}); alert('已加入畫布！請至 UI 8 查看。');">➕ 加至畫布</button>
+                            </td>
                         </tr>
                     `;
                 });
