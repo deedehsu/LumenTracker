@@ -866,8 +866,9 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
             // Check memory cache first
             if (apiResponseCache[address]) {
                 console.log(`[Cache Hit] Serving data for ${address} from local cache.`);
-                renderWalletProfile(address, apiResponseCache[address].profile, apiResponseCache[address].txs);
-                return;
+                // renderWalletProfile(address, apiResponseCache[address].profile, apiResponseCache[address].txs);
+                // return;
+                console.log("CACHE DISABLED FOR DEBUGGING");
             }
 
             if(document.getElementById('ui7NodeAct')) document.getElementById('ui7NodeAct').textContent = "掃描中...";
@@ -904,6 +905,9 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                         address: address,
                         apiKeys: currentLumenApiKeys || {}
                     });
+                    
+                    console.log("=== API RESPONSE FOR", address, "===");
+                    console.log(txResult);
                     
                     // Save to memory cache
                     apiResponseCache[address] = {
