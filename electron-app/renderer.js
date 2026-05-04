@@ -691,7 +691,12 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
                         });
 
                         if (txResult.success && txResult.transactions) {
-                            let txHtml = '<div style="margin-bottom: 10px; font-weight: bold; color: #28a745;">總計發現 ' + txResult.transactions.length + ' 筆最新交易</div>';
+                            let volumeWarning = '';
+                            if (txResult.isHighVolume) {
+                                volumeWarning = '<div style="background-color: #ffeeba; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 10px; font-size: 0.85em;"><strong>⚠️ 高頻巨量交易節點</strong><br>此地址交易量已達 Etherscan 免費 API 上限 (1000筆)，極可能為交易所熱錢包、混幣器或大型洗錢水庫。為節省系統資源，目前僅顯示最新 50 筆。</div>';
+                                if(document.getElementById('panelNodeAddress')) document.getElementById('panelNodeAddress').innerHTML += ' <span style="color:red; font-weight:bold;">[高危水庫]</span>';
+                            }
+                            let txHtml = volumeWarning + '<div style="margin-bottom: 10px; font-weight: bold; color: #28a745;">最新交易清單</div>';
                             
                             txResult.transactions.forEach(tx => {
                                 const date = new Date(tx.timeStamp * 1000);
