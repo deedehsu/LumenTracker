@@ -906,3 +906,7 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
         document.getElementById('btnBackToUi7')?.addEventListener('click', () => {
             showScreen('screenAnalysisDashboard');
         });
+
+        document.getElementById('btnBackToUi6')?.addEventListener('click', () => {
+            showScreen('screenCaseWorkspace');
+        });
