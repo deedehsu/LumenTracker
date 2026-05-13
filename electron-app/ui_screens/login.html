@@ -1,0 +1,15 @@
+    <!-- UI 3 (Login): 系統登入 (非第一次使用) -->
+    <div id="screenLogin" class="container hidden">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 3 (Login)</div>
+        <div class="lock-icon">🔒</div>
+        <h2>系統已鎖定</h2>
+        <p>歡迎回來，調查員 <strong id="displayLoginUserName" style="color:#007bff;"></strong></p>
+        <p>請輸入您的主密碼以解鎖 LumenTracker。</p>
+        <div class="input-group">
+            <input type="password" id="inputLoginPwd" placeholder="請輸入主密碼" autocomplete="current-password">
+            <p class="error-message hidden" id="errLogin">密碼錯誤或資料損壞！請重試。</p>
+        </div>
+        <div class="button-group">
+            <button class="button" id="btnLogin">解鎖並進入系統</button>
+        </div>
+    </div>

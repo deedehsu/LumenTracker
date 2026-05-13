@@ -1,0 +1,31 @@
+    <!-- UI 4: API Key 申請與綁定 (第一次使用) -->
+    <div id="screenApiSetup" class="container hidden" style="max-width: 800px;">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 4</div>
+        <h2>配置區塊鏈 API 金鑰</h2>
+        <p>系統需要透過節點供應商獲取鏈上公開資料。請綁定您的專屬 API Key (BYOK架構)。</p>
+        
+        <div class="api-section">
+            <h3>Etherscan API Key (必備)</h3>
+            <div class="input-group" style="flex-direction: row; justify-content: center;">
+                <input type="text" id="inputEtherscanKey" placeholder="貼上 Etherscan API Key">
+                <button class="button" id="btnTestEtherscan" style="padding: 10px 15px; font-size: 0.9em;">測試連線</button>
+            </div>
+            <div id="resEtherscan" class="test-result"></div>
+        </div>
+
+        <div class="api-section">
+            <h3>Tronscan API Key (建議)</h3>
+            <div class="input-group" style="flex-direction: row; justify-content: center;">
+                <input type="text" id="inputTronscanKey" placeholder="貼上 Tronscan API Key (選填)">
+                <button class="button" id="btnTestTronscan" style="padding: 10px 15px; font-size: 0.9em;">測試連線</button>
+            </div>
+            <div id="resTronscan" class="test-result"></div>
+        </div>
+
+        <p class="error-message hidden" id="errApiSetup"></p>
+
+        <div class="button-group">
+            <button class="button secondary" id="btnBackToPwdSetup">上一步</button>
+            <button class="button" id="btnFinishSetup" style="background-color: #28a745;">完成設定並加密儲存</button>
+        </div>
+    </div>

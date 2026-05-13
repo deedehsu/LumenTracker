@@ -1,0 +1,28 @@
+    <div id="screenUserSetup" class="container hidden" style="max-width: 600px;">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 2</div>
+        <h2>建立調查員檔案</h2>
+        <p>為符合數位證據之監管鏈規範，請詳實填寫以下資訊。</p>
+        <p>系統將以您的<strong>聯絡電話</strong>作為登入帳號，所有鑑識紀錄皆會與此檔案綁定。</p>
+        <div class="input-group" style="align-items: stretch; text-align: left; padding: 0 40px;">
+            <label style="font-weight: bold; font-size: 0.9em; margin-bottom: -5px; color: #555;">所屬單位 (必填)</label>
+            <input type="text" id="inputUnit" placeholder="例如：刑事警察局偵九大隊" style="width: 100%;">
+            
+            <label style="font-weight: bold; font-size: 0.9em; margin-bottom: -5px; color: #555; margin-top: 10px;">職稱 (必填)</label>
+            <input type="text" id="inputTitle" placeholder="例如：偵查佐" style="width: 100%;">
+            
+            <label style="font-weight: bold; font-size: 0.9em; margin-bottom: -5px; color: #555; margin-top: 10px;">姓名 (必填)</label>
+            <input type="text" id="inputName" placeholder="例如：王小明" style="width: 100%;">
+            
+            <label style="font-weight: bold; font-size: 0.9em; margin-bottom: -5px; color: #555; margin-top: 10px;">聯絡電話 / 登入帳號 (必填)</label>
+            <input type="text" id="inputPhone" placeholder="例如：0912345678 (此為未來登入帳號)" style="width: 100%;">
+            
+            <label style="font-weight: bold; font-size: 0.9em; margin-bottom: -5px; color: #555; margin-top: 10px;">電子郵件 (選填)</label>
+            <input type="text" id="inputEmail" placeholder="例如：investigator@police.gov.tw" style="width: 100%;">
+            
+            <p class="error-message hidden" id="errUserSetup" style="text-align: center; margin-top: 10px;">請填寫所有必填欄位！</p>
+        </div>
+        <div class="button-group">
+            <button class="button secondary" id="btnBackToWelcome">上一步</button>
+            <button class="button" id="btnNextToPwdSetup">下一步</button>
+        </div>
+    </div>

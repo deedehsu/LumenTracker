@@ -1,0 +1,84 @@
+    <!-- UI 7: 鑑識分析與視覺化中心 (Analysis Dashboard) -->
+    <div id="screenAnalysisDashboard" class="dashboard-layout hidden">
+        <div style="position: absolute; top: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 1.2em; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #0f0;">UI 7</div>
+        <!-- 左側邊欄 (功能列) -->
+        <div class="sidebar" style="width: 280px; display: flex; flex-direction: column;">
+            <h2 style="font-size: 1.4em;">🛠️ 鑑識工具箱</h2>
+            <div style="flex-grow: 1; overflow-y: auto;">
+                <ul style="margin-bottom: 20px;">
+                    <li style="color: #ccc; cursor: default; border-bottom: none; padding-bottom: 5px;">視圖操作</li>
+                    <li id="toolFitGraph" style="padding-left: 20px;">🎯 適應螢幕 (Fit)</li>
+                    <li id="toolLayoutGraph" style="padding-left: 20px;">🪄 自動排版 (DAG)</li>
+                </ul>
+                <ul style="margin-bottom: 20px;">
+                    <li style="color: #ccc; cursor: default; border-bottom: none; padding-bottom: 5px;">圖層與過濾</li>
+                    <li style="padding-left: 20px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="filterDustTxs" style="margin-right: 10px;"> 隱藏微小交易 (< 10 USDT)
+                        </label>
+                    </li>
+                </ul>
+                <ul style="margin-bottom: 20px;">
+                    <li style="color: #ccc; cursor: default; border-bottom: none; padding-bottom: 5px;">證據匯出</li>
+                    <li id="toolExportPng" style="padding-left: 20px; color: #ffc107;">📸 匯出畫布快照 (PNG)</li>
+                </ul>
+            </div>
+            <button class="button secondary" id="btnBackToUi6" style="width: 100%; margin-top: 10px;">返回案件資料</button>
+        </div>
+
+        <!-- 中央主區塊 (畫布) & 右側資料面板 -->
+        <div style="flex-grow: 1; display: flex; flex-direction: row; position: relative;">
+            
+            <!-- 中央畫布區 -->
+            <div style="flex-grow: 1; display: flex; flex-direction: column; background-color: #ffffff; position: relative;">
+                <!-- 頂部資訊列 -->
+                <div style="background-color: #f8f9fa; padding: 10px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: #333;">🕸️ 涉案幣流畫布 (Tracing Graph)</h3>
+                    <span id="ui7CaseInfo" style="font-family: monospace; color: #666;"></span>
+                </div>
+                
+                <!-- Cytoscape 容器 -->
+                <div id="cy" style="flex-grow: 1; width: 100%; position: relative;">
+                    <div id="cyPlaceholder" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #aaa; text-align: center; pointer-events: none;">
+                        <p style="font-size: 1.5em; margin: 0;">畫布準備就緒</p>
+                        <p style="font-size: 0.9em;">中心節點已建立，請點擊節點開始推進調查</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側可收折資料面板 (Evidence Panel) -->
+            <div id="evidencePanel" style="width: 400px; background-color: #fcfcfc; border-left: 2px solid #ccc; display: flex; flex-direction: column; transition: width 0.3s; box-shadow: -2px 0 5px rgba(0,0,0,0.05);">
+                <div style="padding: 10px; background-color: #e9ecef; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between; align-items: center;">
+                    <h4 style="margin: 0; color: #333;">📋 微觀證據與核對</h4>
+                    <button id="toggleEvidencePanel" style="background: none; border: none; cursor: pointer; font-size: 1.2em;" title="收合面板">▶</button>
+                </div>
+                
+                <div id="evidencePanelContent" style="flex-grow: 1; overflow-y: auto; padding: 15px;">
+                    
+                    <!-- 節點剖析區 (動態更新) -->
+                    <div id="panelNodeProfile" style="margin-bottom: 20px; display: none;">
+                        <h5 style="margin-top: 0; color: #007bff; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">節點剖析</h5>
+                        <p style="font-size: 0.85em; font-family: monospace; word-break: break-all; margin-bottom: 5px;" id="panelNodeAddress">0x...</p>
+                        <div style="font-size: 0.85em; color: #555; background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 4px;">
+                            <p style="margin: 3px 0;"><strong>啟用時間:</strong> <span id="panelNodeAct">掃描中...</span></p>
+                            <p style="margin: 3px 0;"><strong>手續費來源:</strong> <span id="panelNodeGas">掃描中...</span></p>
+                        </div>
+                        <div id="panelNodeTxs" style="margin-top: 15px;"></div>
+                    </div>
+
+                    <!-- 交易紀錄核對表 (Side-by-side) -->
+                    <div id="panelReconciliation">
+                        <h5 style="margin-top: 0; color: #28a745; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">被害人交易紀錄核對</h5>
+                        <p style="font-size: 0.8em; color: #888; margin-bottom: 10px;">左：報案陳述 | 右：鏈上真實</p>
+                        
+                        <div id="reconciliationList" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- 動態填入的對照卡片 -->
+                            <div style="text-align: center; color: #aaa; font-size: 0.9em; padding: 20px;">載入中...</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>

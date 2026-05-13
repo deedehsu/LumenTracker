@@ -18,20 +18,48 @@ let currentLumenApiKeys = null;
                                 let cy; // Cytoscape instance
 
 
-        // Helper: Hide all screens
-        function hideAllScreens() {
-            const screens = ['screenWelcome', 'screenUserSetup', 'screenPasswordSetup', 'screenApiSetup', 'screenLogin', 'screenCaseHub', 'screenCaseWorkspace', 'screenAnalysisDashboard', 'mainDashboard'];
-            screens.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.classList.add('hidden');
-            });
-            // Clear errors
-            document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
-        }
+        const uiScreensPath = './ui_screens/';
 
-        function showScreen(id) {
-            hideAllScreens();
-            document.getElementById(id).classList.remove('hidden');
+        async function loadScreen(screenName, callback) {
+            try {
+                // Remove any existing UI-specific script
+                const oldLogicScript = document.getElementById('ui-logic-script');
+                if (oldLogicScript) {
+                    oldLogicScript.remove();
+                }
+
+                const response = await fetch(`${uiScreensPath}${screenName}.html`);
+                if (!response.ok) {
+                    throw new Error(`Failed to load screen ${screenName}: ${response.statusText}`);
+                }
+                const html = await response.text();
+                const mainContentArea = document.getElementById('main-content-area');
+                if (mainContentArea) {
+                    mainContentArea.innerHTML = html;
+
+                    // Load UI-specific logic script
+                    const logicScript = document.createElement('script');
+                    logicScript.id = 'ui-logic-script';
+                    logicScript.src = `./ui_logic/${screenName}_logic.js`;
+                    logicScript.onload = () => {
+                        if (callback && typeof callback === 'function') {
+                            callback();
+                        }
+                    };
+                    logicScript.onerror = (e) => {
+                        console.warn(`Failed to load logic for ${screenName}:`, e);
+                        if (callback && typeof callback === 'function') {
+                            callback(); // Still call callback even if logic fails to load
+                        }
+                    };
+                    document.body.appendChild(logicScript);
+                }
+                document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
+
+            } catch (error) {
+                console.error(`Error loading screen ${screenName}:`, error);
+                alert(`無法載入畫面：${screenName}.html。錯誤：${error.message}`);
+            }
         }
 
         // --- Initialization ---
@@ -39,172 +67,42 @@ let currentLumenApiKeys = null;
             try {
                 const status = await api.checkSystemStatus();
                 if (status.isConfigured) {
-                    // Not first run -> Go to Login
                     currentUserProfile = status.userProfile;
-                    document.getElementById('displayLoginUserName').textContent = `${currentUserProfile.name} (帳號: ${currentUserProfile.phone})`;
-                    showScreen('screenLogin');
-                    document.getElementById('inputLoginPwd').focus();
+                    loadScreen('login', () => {
+                        const displayLoginUserName = document.getElementById('displayLoginUserName');
+                        if (displayLoginUserName) {
+                            displayLoginUserName.textContent = `${currentUserProfile.name} (帳號: ${currentUserProfile.phone})`;
+                        }
+                        const inputLoginPwd = document.getElementById('inputLoginPwd');
+                        if (inputLoginPwd) {
+                            inputLoginPwd.focus();
+                        }
+                    });
                 } else {
-                    // First run -> Go to Welcome
-                    showScreen('screenWelcome');
+                    loadScreen('welcome');
                 }
             } catch(e) {
                 console.error('Init error:', e);
-                showScreen('screenWelcome');
+                loadScreen('welcome');
             }
         });
 
-        // --- UI 1 to UI 2 ---
-        document.getElementById('btnNextToUserSetup').addEventListener('click', () => {
-            showScreen('screenUserSetup');
-            document.getElementById('inputUserName').focus();
-        });
 
-        // --- UI 2 to UI 3 (Setup) ---
-        document.getElementById('btnBackToWelcome').addEventListener('click', () => showScreen('screenWelcome'));
-        document.getElementById('btnNextToPwdSetup').addEventListener('click', () => {
-            const unit = document.getElementById('inputUnit').value.trim();
-            const title = document.getElementById('inputTitle').value.trim();
-            const name = document.getElementById('inputName').value.trim();
-            const phone = document.getElementById('inputPhone').value.trim();
-            const email = document.getElementById('inputEmail').value.trim();
-            const errEl = document.getElementById('errUserSetup');
 
-            if (!unit || !title || !name || !phone) {
-                errEl.classList.remove('hidden');
-                return;
-            }
-            
-            errEl.classList.add('hidden');
-            tempUserProfile = { unit, title, name, phone, email };
-            
-            document.getElementById('displaySetupUserName').textContent = `${title} ${name} (帳號: ${phone})`;
-            showScreen('screenPasswordSetup');
-            document.getElementById('inputNewPwd').focus();
-        });
 
-        // --- UI 3 to UI 4 ---
-        document.getElementById('btnBackToUserSetup').addEventListener('click', () => showScreen('screenUserSetup'));
-        document.getElementById('btnNextToApiSetup').addEventListener('click', () => {
-            const p1 = document.getElementById('inputNewPwd').value;
-            const p2 = document.getElementById('inputConfirmPwd').value;
-            if (!p1 || p1 !== p2) {
-                document.getElementById('errPwdSetup').classList.remove('hidden');
-                return;
-            }
-            tempPassword = p1;
-            showScreen('screenApiSetup');
-        });
 
-        // --- API Testing Logic ---
-        document.getElementById('btnTestEtherscan').addEventListener('click', async () => {
-            const key = document.getElementById('inputEtherscanKey').value.trim();
-            const resEl = document.getElementById('resEtherscan');
-            resEl.textContent = '測試中...';
-            resEl.className = 'test-result';
-            const res = await api.testApiKey({ provider: 'etherscan', apiKey: key });
-            resEl.textContent = res.message;
-            resEl.className = res.success ? 'test-result success-message' : 'test-result error-message';
-        });
 
-        document.getElementById('btnTestTronscan').addEventListener('click', async () => {
-            const key = document.getElementById('inputTronscanKey').value.trim();
-            const resEl = document.getElementById('resTronscan');
-            resEl.textContent = '測試中...';
-            resEl.className = 'test-result';
-            const res = await api.testApiKey({ provider: 'tronscan', apiKey: key });
-            resEl.textContent = res.message;
-            resEl.className = res.success ? 'test-result success-message' : 'test-result error-message';
-        });
 
-        // --- UI 4 to UI 5 (Finish Setup) ---
-        document.getElementById('btnBackToPwdSetup').addEventListener('click', () => showScreen('screenPasswordSetup'));
-        document.getElementById('btnFinishSetup').addEventListener('click', async () => {
-            const eKey = document.getElementById('inputEtherscanKey').value.trim();
-            const tKey = document.getElementById('inputTronscanKey').value.trim();
-            const errEl = document.getElementById('errApiSetup');
-            
-            if (!eKey && !tKey) {
-                errEl.textContent = "請至少輸入一個 API Key 才能繼續。";
-                errEl.classList.remove('hidden');
-                return;
-            }
 
-            const apiKeys = {};
-            if (eKey) apiKeys.etherscan = eKey;
-            if (tKey) apiKeys.tronscan = tKey;
 
-            const btn = document.getElementById('btnFinishSetup');
-            btn.disabled = true;
-            btn.textContent = "加密設定中...";
 
-            try {
-                const res = await api.setupSystem({
-                    userProfile: tempUserProfile,
-                    masterPassword: tempPassword,
-                    apiKeys: apiKeys
-                });
 
-                if (res.success) {
-                    currentUserProfile = tempUserProfile;
-                    currentLumenApiKeys = apiKeys;
-                    // Setup done, move to UI 5 (Case Hub)
-                    document.getElementById('displayHubUserName').textContent = `${currentUserProfile.unit} - ${currentUserProfile.title} ${currentUserProfile.name}`;
-                    showScreen('screenCaseHub');
-                    
-                    // Clear memory
-                    tempPassword = '';
-                    document.getElementById('inputNewPwd').value = '';
-                    document.getElementById('inputConfirmPwd').value = '';
-                } else {
-                    errEl.textContent = `儲存失敗: ${res.message}`;
-                    errEl.classList.remove('hidden');
-                }
-            } catch(e) {
-                errEl.textContent = "內部錯誤，無法儲存。";
-                errEl.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = "完成設定並加密儲存";
-            }
-        });
 
-        // --- UI 3 (Login) to UI 5 ---
-        document.getElementById('btnLogin').addEventListener('click', async () => {
-            const pwd = document.getElementById('inputLoginPwd').value;
-            const errEl = document.getElementById('errLogin');
-            if(!pwd) return;
 
-            const btn = document.getElementById('btnLogin');
-            btn.disabled = true;
-            btn.textContent = "解鎖中...";
 
-            try {
-                const res = await api.loginSystem(pwd);
-                if (res.success) {
-                    currentUserProfile = res.userProfile;
-                    currentLumenApiKeys = res.apiKeys || null;
-                    document.getElementById('displayHubUserName').textContent = `${currentUserProfile.unit} - ${currentUserProfile.title} ${currentUserProfile.name}`;
-                    document.getElementById('inputLoginPwd').value = '';
-                    showScreen('screenCaseHub');
-                } else {
-                    errEl.textContent = res.message;
-                    errEl.classList.remove('hidden');
-                    document.getElementById('inputLoginPwd').value = '';
-                    document.getElementById('inputLoginPwd').focus();
-                }
-            } catch(e) {
-                errEl.textContent = "內部錯誤。";
-                errEl.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = "解鎖並進入系統";
-            }
-        });
 
-        document.getElementById('inputLoginPwd').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') document.getElementById('btnLogin').click();
-        });
+
+
 
         // --- UI 5: Case Hub Actions (Placeholders for UI 6) ---
                 document.getElementById('btnCreateCase')?.addEventListener('click', () => {
@@ -838,47 +736,3 @@ document.getElementById('btnSaveCase')?.addEventListener('click', () => {
         });
 
 
-        // --- 案件登錄邏輯 (建立證據鏈) ---
-        const btnStartCase = document.getElementById('startCaseButton');
-        if (btnStartCase) {
-            btnStartCase.addEventListener('click', () => {
-                try {
-                    const unit = document.getElementById('investigatorUnit')?.value.trim() || '';
-                    const name = document.getElementById('investigatorName')?.value.trim() || '';
-                    const caseName = document.getElementById('caseId')?.value.trim() || '';
-                    const target = document.getElementById('initialTarget')?.value.trim() || '';
-                    const caseSetupError = document.getElementById('caseSetupError');
-
-                    if (!unit || !name || !caseName) {
-                        if(caseSetupError) caseSetupError.classList.remove('hidden');
-                        return;
-                    }
-                    
-                    if(caseSetupError) caseSetupError.classList.add('hidden');
-
-                    const now = new Date();
-                    const timeString = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-
-                    const hci = document.getElementById('headerCaseInfo');
-                    if(hci) hci.textContent = `案件: ${caseName} | 調查單位: ${unit} | 調查員: ${name}`;
-                    
-                    const hti = document.getElementById('headerTimeInfo');
-                    if(hti) hti.textContent = `立案時間: ${timeString}`;
-                    
-                    const wsii = document.getElementById('wsInvestigatorInfo');
-                    if(wsii) wsii.textContent = `調查員: ${unit} | ${name}`;
-
-                    // **絕對強制** 隱藏紅畫面並顯示 UI 6
-                    document.getElementById('screenCaseSetup').classList.add('hidden');
-                    document.getElementById('screenCaseWorkspace').classList.remove('hidden');
-
-                    if (target) {
-                        const wsWalletAddr = document.getElementById('wsWalletAddr');
-                        if(wsWalletAddr) wsWalletAddr.value = target;
-                    }
-                } catch (err) {
-                    alert("建立案件失敗: " + err.message);
-                    console.error(err);
-                }
-            });
-        }
