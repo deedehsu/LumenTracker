@@ -324,7 +324,108 @@ app.whenReady().then(async () => {
       store = new Store();
       console.log('electron-store initialized successfully.');
 
-      // --- IPC 處理器 ---
+      
+// --- Tronscan API 模組 ---
+async function analyzeWalletTronscan(apiKey, address) {
+    try {
+        const headers = apiKey ? { 'TRON-PRO-API-KEY': apiKey } : {};
+        let actTime = '無紀錄 (API 限制)';
+        let approvals = "尚未支援 (TRX)"; 
+        let topGas = '無';
+
+        try {
+            // Get account info for activation and approvals
+            const resInfo = await axios.get('https://apilist.tronscanapi.com/api/accountv2', {
+                params: { address: address },
+                headers: headers,
+                timeout: 8000
+            });
+            const data = resInfo.data;
+            if (data.date_created && data.date_created > 0) {
+                const d = new Date(data.date_created);
+                actTime = `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+            }
+        } catch(e) {
+            console.warn("Tronscan accountv2 API failed, might require Pro API Key:", e.message);
+        }
+
+        try {
+            // Get top gas source from normal txs
+            const resTxs = await axios.get('https://apilist.tronscanapi.com/api/transaction', {
+                params: { sort: '-timestamp', count: true, limit: 50, start: 0, address: address },
+                headers: headers,
+                timeout: 8000
+            });
+            if (resTxs.data && resTxs.data.data) {
+                const funders = {};
+                resTxs.data.data.forEach(tx => {
+                    if (tx.toAddress === address && tx.contractData && tx.contractData.amount) {
+                        funders[tx.ownerAddress] = (funders[tx.ownerAddress] || 0) + parseFloat(tx.contractData.amount);
+                    }
+                });
+                if (Object.keys(funders).length > 0) {
+                    topGas = Object.keys(funders).reduce((a, b) => funders[a] > funders[b] ? a : b);
+                }
+            }
+        } catch(e) {
+            console.warn("Tronscan transaction API failed:", e.message);
+        }
+
+        return {
+            success: true,
+            profile: {
+                activation_time: actTime,
+                top_gas_source: topGas,
+                approvals_count: approvals
+            }
+        };
+    } catch (error) {
+        return { success: false, message: 'Tronscan 分析失敗: ' + error.message };
+    }
+}
+
+async function fetchTransactionsTronscan(apiKey, address) {
+    try {
+        const headers = apiKey ? { 'TRON-PRO-API-KEY': apiKey } : {};
+        // Fetch TRC20 transfers (most common for USDT)
+        const response = await axios.get('https://apilist.tronscanapi.com/api/token_trc20/transfers', {
+            params: {
+                limit: 50,
+                start: 0,
+                sort: '-timestamp',
+                count: true,
+                relatedAddress: address
+            },
+            headers: headers,
+            timeout: 8000
+        });
+
+        if (response.data && response.data.token_transfers) {
+            const txs = response.data.token_transfers.map(tx => ({
+                timeStamp: Math.floor(tx.block_ts / 1000),
+                from: tx.from_address,
+                to: tx.to_address,
+                value: tx.quant, // Already considering decimals? Tronscan quant is raw. We need to handle decimals.
+                // USDT has 6 decimals on TRON
+                decimals: (tx.tokenInfo && tx.tokenInfo.tokenDecimal !== undefined) ? tx.tokenInfo.tokenDecimal : 6,
+                symbol: (tx.tokenInfo && tx.tokenInfo.tokenAbbr) ? tx.tokenInfo.tokenAbbr : 'USDT'
+            }));
+            
+            return {
+                success: true,
+                transactions: txs,
+                isHighVolume: response.data.total >= 1000,
+                totalFetched: response.data.total
+            };
+        }
+        return { success: true, transactions: [], isHighVolume: false, totalFetched: 0 };
+    } catch (error) {
+        return { success: false, message: 'Tronscan 交易獲取失敗: ' + error.message };
+    }
+}
+
+
+// --- IPC 處理器 ---
 
       
       ipcMain.handle('open-case-file', async () => {
@@ -493,6 +594,8 @@ app.whenReady().then(async () => {
           if (provider === 'etherscan') {
               if (!apiKeys || !apiKeys.etherscan) return { success: false, message: '未配置 Etherscan API Key。' };
               return analyzeWalletEtherscan(apiKeys.etherscan, address);
+          } else if (provider === 'tronscan') {
+              return analyzeWalletTronscan(apiKeys ? apiKeys.tronscan : null, address);
           }
           return { success: false, message: `尚未支援 ${provider} 的初勘。` };
       });

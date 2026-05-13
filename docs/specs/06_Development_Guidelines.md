@@ -20,3 +20,14 @@
 
 ## 4. 資源與效率控管 (Resource Efficiency)
 *   **謀定而後動 (Think Before Act)**：在接收到新的需求時，先進行系統架構與影響範圍的評估，提出完整的實作計畫並與決策者 (Deede) 確認後，再開始撰寫程式碼，避免反覆修改帶來的浪費。
+
+## 3. 外部 API 連線與限制防禦機制 (External API Defensive Strategies)
+
+為應對 Etherscan 將免費版 API 單次請求上限自 10,000 筆下調至 1,000 筆之政策（生效日：2026/07/01），並堅守 LumenTracker 之「零預算戰略」，系統實作必須強制遵循以下防禦策略：
+
+1. **精準時空擷取 (Time/Block-bound Fetching)**
+   - 在抓取歷史交易 (`/api?module=account&action=txlist`) 時，不可依賴預設之無限制查詢。應將被害人受騙時間點轉換為區塊高度 (`startblock` 與 `endblock`)，以大幅縮小撈取範圍，防止關鍵交易遭截斷。
+2. **巨量節點側寫 (Volume Profiling Strategy)**
+   - 若 API 回傳之交易筆數觸及 1,000 筆上限，系統不應視為報錯，而應將此限制轉化為鑑識特徵。系統須於 UI 7 標記該節點為「**高頻巨量交易節點**」，並自動提示調查員該地址極可能為「交易所熱錢包 (Hot Wallet)」、「混幣器 (Mixer)」或「大型洗錢水庫」，提醒其改變追查策略。
+3. **自動分頁迴圈防護 (Safe Pagination)**
+   - 若必須執行全歷史掃描，底層通訊模組需實作基於 `page` 與 `offset` 之自動翻頁迴圈，並嚴格設定「防暴衝延遲 (Throttle Delay)」，確保 API 呼叫頻率不會觸發 `429 Too Many Requests` (目前上限為 5 req/sec)。
