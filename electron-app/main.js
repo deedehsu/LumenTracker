@@ -482,6 +482,18 @@ app.whenReady().then(async () => {
             return { success: false, message: `尚未支援 ${provider} 的初勘。` };
         });
 
+        // NEW IPC HANDLER: check-system-status
+        ipcMain.handle('check-system-status', async () => {
+            try {
+                if (!store) throw new Error('Store is not initialized.');
+                const systemConfigured = store.get('systemConfigured', false);
+                return { success: true, systemConfigured };
+            } catch (error) {
+                console.error('Error checking system status:', error);
+                return { success: false, message: error.message };
+            }
+        });
+
         // --- 內部案件資料庫管理 (Internal Case Database) ---
         ipcMain.handle('save-case-internal', async (event, caseData) => {
             try {
