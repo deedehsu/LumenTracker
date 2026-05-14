@@ -3,8 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const axios = require('axios');
-// Removed: const Store = (await import('electron-store')).default; // This line is causing the top-level await issue
-// Moved Store import inside app.whenReady().then()
+// No top-level Store import here, it will be dynamically imported inside app.whenReady()
 
 let store;
 let mainWindow; // Declare mainWindow globally so it can be referenced by ipcMain handlers
@@ -48,18 +47,560 @@ function decrypt(text, masterPassword) {
 
     return decrypted.toString();
 }
-// --- 歷史匯率 API 模組 ---\nasync function fetchHistoricalRate(dateString, coinType = \'USDT\') {\n    try {\n        // dateString format expected: \"YYYY-MM-DD\"\n        const targetDate = new Date(dateString + \'T00:00:00Z\');\n        // Convert to seconds timestamp for Yahoo Finance\n        const start = Math.floor(targetDate.getTime() / 1000);\n        const end = start + 86400; // +1 day\n\n        // 1. Fetch Crypto to USD (e.g., USDT-USD, ETH-USD)\n        const coinSymbol = `${coinType.toUpperCase()}-USD`;\n        let coinUsdPrice = 1.0;\n        let coinCalcMethod = \"Close Price\";\n        try {\n            const coinRes = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${coinSymbol}?interval=1d&period1=${start}&period2=${end}`, { timeout: 8000 });\n            const quote = coinRes.data.chart.result[0].indicators.quote[0];\n            const high = quote.high.find(p => p !== null);\n            const low = quote.low.find(p => p !== null);\n\n            if (high !== undefined && low !== undefined) {\n                coinUsdPrice = (high + low) / 2;\n                coinCalcMethod = \"Average of High/Low\";\n            } else {\n                coinUsdPrice = quote.close.find(p => p !== null) || 1.0;\n            }\n        } catch(e) {\n            console.warn(`Could not parse ${coinSymbol}, defaulting to 1.0 USD`, e.message);\n        }\n\n        // 2. Fetch USD to TWD (Calculate Average of High and Low)\n        let usdTwdRate = 32.0; // fallback\n        let calculationMethod = \"Close Price\";\n        try {\n            const twdRes = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/USDTWD=X?interval=1d&period1=${start}&period2=${end}`, { timeout: 8000 });\n            const quote = twdRes.data.chart.result[0].indicators.quote[0];\n            const high = quote.high.find(p => p !== null);\n            const low = quote.low.find(p => p !== null);\n\n            if (high !== undefined && low !== undefined) {\n                usdTwdRate = (high + low) / 2;\n                calculationMethod = \"Average of High/Low\";\n            } else {\n                // Fallback to close if high/low are missing\n                usdTwdRate = quote.close.find(p => p !== null) || 32.0;\n            }\n        } catch(e) {\n            console.warn(`Could not parse USDTWD=X, defaulting to 32.0 TWD`, e.message);\n        }\n\n        // Calculate final Crypto to TWD rate\n        const finalTwdRate = (coinUsdPrice * usdTwdRate).toFixed(2);\n        \n        return { success: true, rate: finalTwdRate, details: `Crypto/USD: ${coinUsdPrice.toFixed(4)} (${coinCalcMethod}) * USD/TWD: ${usdTwdRate.toFixed(2)} (${calculationMethod})` };\n\n    } catch (error) {\n        console.error('Error fetching historical rate via Yahoo:', error.message);\n        return { success: false, message: error.message };\n    }\n}\n\n// --- API 測試模組 ---\nasync function testEtherscanApiKey(apiKey) {\n    if (!apiKey || apiKey.length < 20) return { success: false, message: \'API Key 格式不正確或過短。\' };\n    try {\n        const response = await axios.get(\'https://api.etherscan.io/api\', { // Corrected to api.etherscan.io/api\n            params: {\n                module: \'account\', action: \'balance\',\n                address: \'0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae\', // A known public address\n                tag: \'latest\', apikey: apiKey\n            },\n            timeout: 8000\n        });\n        if (response.data?.status === \'1\' && response.data?.message === \'OK\') {\n            return { success: true, message: \'Etherscan API Key 連線測試成功！\' };\n        } else if (response.data?.status === \'0\') {\n            return { success: false, message: `測試失敗: ${response.data.result}` };\n        }\n        return { success: false, message: \'收到未預期的 Etherscan API 響應格式。\' };\n    } catch (error) {\n        return {
-success: false, message: `連線測試失敗: ${error.message}` };\n    }\n}\n\nasync function
-testTronscanApiKey(apiKey) {\n    if (!apiKey || apiKey.length < 20) return { success: false, message: \'API Key 格式不正確或過短。\' };\n    try {\n        const response = await axios.get(\'https://apilist.tronscanapi.com/api/accountv2\', {\n            params: { address: \'TE2RzoSV3wFK99w6J9UnnZ4vLfXYoxvRwP\' }, // Tether USDT Contract Address as test target\n            headers: { \'TRON-PRO-API-KEY\': apiKey },\n            timeout: 8000\n        });\n        \n        // Tronscan API successful response check (basic heuristic)\n        if (response.data && response.data.address) {\n            return { success: true, message: \'Tronscan API Key 連線測試成功！\' };\n        }\n        return { success: false, message: \'收到未預期的 Tronscan API 響應格式。\' };\n    } catch (error) {\n        // Tronscan usually returns 401/403 for invalid keys\n        if (error.response && (error.response.status === 401 || error.response.status === 403)) {\n            return { success: false, message: \'測試失敗: 無效的 Tronscan API Key 或權限不足。\' };\n        }\n        return { success: false, message: `連線測試失敗: ${error.message}` };\n    }\n}\n\n// --- 錢包初勘模組 (Wallet Profiling) ---\nasync function analyzeWalletEtherscan(apiKey, address) {\n    try {\n        // 1. Get Normal Txs\n        const normalRes = await axios.get(\'https://api.etherscan.io/api\', { // Corrected to api.etherscan.io/api\n            params: { module: \'account\', action: \'txlist\', address: address, startblock: 0, endblock: 99999999, sort: \'asc\', apikey: apiKey },\n            timeout: 8000\n        });\n        const normalTxs = Array.isArray(normalRes.data.result) ? normalRes.data.result : [];\n        \n        let firstTx = normalTxs.length > 0 ? normalTxs[0] : null;\n        let ethInCount = 0, ethOutCount = 0;\n        let ethInVol = 0, ethOutVol = 0;\n        let gasSources = {};\n        let approvals = 0;\n\n        for (const tx of normalTxs) {\n            const toAddr = tx.to || \'\';\n            const fromAddr = tx.from || \'\';\n            \n            if (toAddr.toLowerCase() === address.toLowerCase()) {\n                ethInCount++;\n                ethInVol += parseFloat(tx.value);\n                gasSources[fromAddr] = (gasSources[fromAddr] || 0) + parseFloat(tx.value);\n            } else if (fromAddr.toLowerCase() === address.toLowerCase()) {\n                ethOutCount++;\n                ethOutVol += parseFloat(tx.value);\n                if (tx.input && tx.input.startsWith(\'0x095ea7b3\')) approvals++; // ERC20 approve signature\n            }\n        }\n        \n        let topGasSource = null;\n        let maxGas = 0;\n        for (const [addr, val] of Object.entries(gasSources)) {\n            if (val > maxGas) { maxGas = val; topGasSource = addr; }\n        }\n\n        // 2. Get Token Txs (for USDT)\n        const tokenRes = await axios.get(\'https://api.etherscan.io/api\', { // Corrected to api.etherscan.io/api\n            params: { module: \'account\', action: \'tokentx\', address: address, startblock: 0, endblock: 99999999, sort: \'asc\', apikey: apiKey },\n            timeout: 8000\n        });\n        const tokenTxs = Array.isArray(tokenRes.data.result) ? tokenRes.data.result : [];\n        \n        let usdtInCount = 0, usdtOutCount = 0;\n        let usdtInVol = 0, usdtOutVol = 0;\n\n        for (const tx of tokenTxs) {\n            // Assuming USDT has tokenSymbol \'USDT\' and 6 decimals\n            if (tx.tokenSymbol === \'USDT\' || tx.tokenName?.toLowerCase().includes(\'tether\')) {\n                const toAddr = tx.to || \'\';\n                const fromAddr = tx.from || \'\';\n                if (toAddr.toLowerCase() === address.toLowerCase()) {\n                    usdtInCount++;\n                    usdtInVol += parseFloat(tx.value); // Value already normalized by Etherscan for tokentx\n                } else if (fromAddr.toLowerCase() === address.toLowerCase()) {\n
-usdtOutCount++;\n                    usdtOutVol +=
-parseFloat(tx.value); // Value already normalized by Etherscan for tokentx\n                }\n            }\n        }\n\n        return {\n            success: true,\n            provider: \'Etherscan\',\n            profile: {\n                activation_time: firstTx ? new Date(parseInt(firstTx.timeStamp) * 1000).toLocaleString() : \'無紀錄\',\n                // first_gas_source: firstTx ? firstTx.from : \'無\', // This might not be the actual gas source, but the sender of the first tx\n                eth_in_count: ethInCount,\n                eth_out_count: ethOutCount,\n                eth_in_vol: (ethInVol / 1e18).toFixed(6),\n                eth_out_vol: (ethOutVol / 1e18).toFixed(6),\n                usdt_in_count: usdtInCount,\n                usdt_out_count: usdtOutCount,\n                usdt_in_vol: (usdtInVol / 1e6).toFixed(2), // USDT typically 6 decimals\n                usdt_out_vol: (usdtOutVol / 1e6).toFixed(2), // USDT typically 6 decimals\n                top_gas_source: topGasSource || \'無\',\n                top_gas_amount: (maxGas / 1e18).toFixed(6),\n                approvals_count: approvals,\n                total_normal_txs: normalTxs.length,\n                total_token_txs: tokenTxs.length\n            }\n        };\n\n    } catch (error) {\n        console.error(\'Error analyzing wallet:\', error.message);\n        return { success: false, message: `初勘失敗: ${error.message}` };\n    }\n}\n\n// --- Tronscan API 模組 ---\nasync function analyzeWalletTronscan(apiKey, address) {\n    try {\n        const headers = apiKey ? { \'TRON-PRO-API-KEY\': apiKey } : {};\n        let actTime = \'無紀錄 (API 限制)\';\n        let approvals = \"尚未支援 (TRX)\"; // Tronscan API doesn\'t directly provide ERC20 approvals in this format\n        let topGas = \'無\';\n\n        try {\n            // Get account info for activation and approvals\n            const resInfo = await axios.get(\'https://apilist.tronscanapi.com/api/accountv2\', {\n                params: { address: address },\n                headers: headers,\n                timeout: 8000\n            });\n            const data = resInfo.data;\n            if (data.date_created && data.date_created > 0) {\n                const d = new Date(data.date_created);\n                actTime = `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,\'0\')}/${d.getDate().toString().padStart(2,\'0\')} ${d.getHours().toString().padStart(2,\'0\')}:${d.getMinutes().toString().padStart(2,\'0\')}`;\n            }\n        } catch(e) {\n            console.warn(\"Tronscan accountv2 API failed, might require Pro API Key:\", e.message);\n        }\n\n        try {\n            // Get top gas source from normal txs (simplified for TRX)\n            const resTxs = await axios.get(\'https://apilist.tronscanapi.com/api/transaction\', {\n                params: { sort: \'-timestamp\', count: true, limit: 50, start: 0, address: address },\n                headers: headers,\n                timeout: 8000\n            });\n            if (resTxs.data && resTxs.data.data) {\n                const funders = {};\n                resTxs.data.data.forEach(tx => {\n                    // For TRX, the \"gas source\" is typically the sender of an incoming TRX transaction.\n                    // This is a simplification; a full analysis would be more complex.\n                    if (tx.toAddress === address && tx.contractData && tx.contractData.amount && tx.contractType === 0) { // contractType 0 is TRX transfer\n                        funders[tx.ownerAddress] = (funders[tx.ownerAddress] || 0) + parseFloat(tx.contractData.amount);\n                    }\n                });\n                if (Object.keys(funders).length > 0) {\n                    topGas = Object.keys(funders).reduce((a, b) => funders[a] > funders[b] ? a : b);\n                }\n            }\n        } catch(e) {\n
-console.warn(\"Tronscan transaction API failed:\", e.message);\n        }\n\n        return {\n
-success: true,\n            profile: {\n                activation_time: actTime,\n                top_gas_source: topGas,\n                approvals_count: approvals // Placeholder for now\n            }\n        };\n    } catch (error) {\n        return { success: false, message: \'Tronscan 分析失敗: \' + error.message };\n    }\n}\n\nasync function fetchEtherscanTransactions(apiKey, address) {\n    const ETHERSCAN_API_URL = \'https://api.etherscan.io/api\'; // Corrected to api.etherscan.io/api\n    try {\n        const response = await axios.get(ETHERSCAN_API_URL, {\n            params: {\n                module: \'account\',\n                action: \'txlist\',\n                address: address,\n                startblock: 0,\n                endblock: 99999999,\n                page: 1,\n                offset: 50, // Fetch up to 50 latest transactions\n                sort: \'desc\',\n                apikey: apiKey\n            },\n            timeout: 8000\n        });\n\n        if (response.data?.status === \'1\' && response.data?.message === \'OK\') {\n            // Etherscan returns transaction list in the result array\n            return { success: true, transactions: response.data.result };\n        } else if (response.data?.status === \'0\') {\n            return { success: false, message: `查詢失敗: ${response.data.result}` };\n        }\n        return { success: false, message: \'收到未預期的 Etherscan API 響應格式。\' };\n\n    } catch (error) {\n        console.error(\'Error fetching Etherscan transactions:\', error.message);\n        return { success: false, message: `查詢失敗 (網路或伺服器錯誤): ${error.message}` };\n    }\n}\n\nasync function fetchTransactionsTronscan(apiKey, address) {\n    try {\n        const headers = apiKey ? { \'TRON-PRO-API-KEY\': apiKey } : {};\n        // Fetch TRC20 transfers (most common for USDT)\n        const response = await axios.get(\'https://apilist.tronscanapi.com/api/token_trc20/transfers\', {\n            params: {\n                limit: 50,\n                start: 0,\n                sort: \'-timestamp\',\n                count: true,\n                relatedAddress: address\n            },\n            headers: headers,\n            timeout: 8000\n        });\n\n        if (response.data && response.data.token_transfers) {\n            const txs = response.data.token_transfers.map(tx => ({\n                timeStamp: Math.floor(tx.block_ts / 1000),\n                from: tx.from_address,\n                to: tx.to_address,\n                value: tx.quant, // This is raw value, needs to be divided by decimals\n                // USDT has 6 decimals on TRON. We will assume 6 if not explicitly found.\n                decimals: (tx.tokenInfo && tx.tokenInfo.tokenDecimal !== undefined) ? tx.tokenInfo.tokenDecimal : 6,\n                symbol: (tx.tokenInfo && tx.tokenAbbr) ? tx.tokenInfo.tokenAbbr : \'USDT\'\n            }));\n            \n            return {
-                success: true,\n                transactions: txs,\n                isHighVolume: response.data.total >= 1000,\n                totalFetched: response.data.total
-};\n        }\n        return { success: true, transactions: [], isHighVolume: false, totalFetched: 0 };\n    } catch (error) {\n        return { success: false, message: \'Tronscan 交易獲取失敗: \' + error.message };\n    }\n}\n\n// --- Electron 視窗創建 ---\nfunction createWindow() {\n    mainWindow = new BrowserWindow({\n        width: 1200, // Increased width for better dashboard layout\n        height: 800, // Increased height\n        minWidth: 800,\n        minHeight: 600,\n        webPreferences: {\n            preload: path.join(__dirname, \'preload.js\'),\n            nodeIntegration: false,\n            contextIsolation: true,\n            webSecurity: false \n        },\n        show: false // Don\'t show until ready\n    });\n\n    mainWindow.loadFile(path.join(__dirname, \'index.html\'));\n\n    // Show window when content is ready\n    mainWindow.once(\'ready-to-show\', () => {\n        mainWindow.show();\n        // mainWindow.webContents.openDevTools(); // Optional: Open DevTools for debugging\n    });\n}\n\n// --- App 生命周期事件
----\napp.whenReady().then(async () => {\n    try {\n        // Initialize electron-store\n        const Store = (await import(\'electron-store\')).default; // Dynamically import Store\n        store = new Store();\n        console.log(\'electron-store initialized successfully.\');\n\n        // IPC Handlers should be defined here, after store is initialized.\n        // --- IPC 處理器 ---\n        ipcMain.handle(\'setup-system\', async (event, { userProfile, masterPassword, apiKeys }) => {\n            try {\n                if (!store) throw new Error(\'Store is not initialized.\');\n                const dataString = JSON.stringify(apiKeys);\n                const encryptedData = encrypt(dataString, masterPassword);\n                \n                store.set(\'userProfile\', userProfile);\n                store.set(\'encryptedApiKeys\', encryptedData);\n                store.set(\'systemConfigured\', true);\n                \n                console.log(`[Audit Log] System initialized and keys bound for user: ${userProfile.name} (Phone: ${userProfile.phone})`);\n                \n                return { success: true };\n            } catch (error) {\n                console.error(\'Setup failed:\', error);\n                return { success: false, message: error.message };\n            }\n        });\n\n        ipcMain.handle(\'login-system\', async (event, masterPassword) => {\n            try {\n                if (!store) throw new Error(\'Store is not initialized.\');\n                const encryptedData = store.get(\'encryptedApiKeys\');\n                if (!encryptedData) return { success: false, message: \'System not configured.\' };\n                \n                const decryptedString = decrypt(encryptedData, masterPassword);\n                const apiKeys = JSON.parse(decryptedString);\n                const userProfile = store.get(\'userProfile\', {});\n                \n                console.log(`[Audit Log] User ${userProfile.name} (Phone: ${userProfile.phone}) logged in successfully.`);\n                \n                return { success: true, apiKeys, userProfile };\n            } catch (error) {\n                console.error(\'Login failed:\', error);\n                return { success: false, message: \'密碼錯誤或資料損壞。\' };\n            }\n        });\n\n        ipcMain.handle(\'test-api-key\', async (event, { provider, apiKey }) => {\n            if (provider === \'etherscan\') return testEtherscanApiKey(apiKey);\n            if (provider === \'tronscan\') return testTronscanApiKey(apiKey);\n            return { success: false, message: `Unsupported provider: ${provider}` };\n        });\n\n        ipcMain.handle(\'fetch-transactions\', async (event, { provider, address, apiKeys }) => {\n            if (provider === \'etherscan\') {\n                if (!apiKeys || !apiKeys.etherscan) return { success: false, message: \'未配置 Etherscan API Key。\' };\n                return fetchEtherscanTransactions(apiKeys.etherscan, address);\n            }\n            if (provider === \'tronscan\') {\n                if (!apiKeys || !apiKeys.tronscan) return { success: false, message: \'未配置 Tronscan API Key。\' };\n                return fetchTransactionsTronscan(apiKeys.tronscan, address);\n            }\n            return { success: false, message: `尚未支援 ${provider} 的查詢。` };\n        });\n\n        ipcMain.handle(\'get-historical-rate\', async (event, dateString, coinType) => {\n            return await fetchHistoricalRate(dateString, coinType);\n        });\n\n        ipcMain.handle(\'analyze-wallet\', async (event, { provider, address, apiKeys }) => {\n            if (provider === \'etherscan\') {\n                if (!apiKeys || !apiKeys.etherscan) return { success: false, message: \'未配置 Etherscan API Key。\' };\n                return analyzeWalletEtherscan(apiKeys.etherscan, address);\n            } else if (provider === \'tronscan\') {\n                return
-analyzeWalletTronscan(apiKeys ? apiKeys.tronscan : nu
-ll, address);\n            }\n            return { success: false, message: `尚未支援 ${provider} 的初勘。` };\n        });\n\n        // --- 內部案件資料庫管理 (Internal Case Database) ---\n        ipcMain.handle(\'save-case-internal\', async (event, caseData) => {\n            try {\n                if (!store) throw new Error(\'Store is not initialized.\');\n                \n                // 取得現有案件庫 (Array of cases)\n                let cases = store.get(\'cases\', []);\n                \n                // 確保有案號或唯一 ID\n                const caseId = caseData.caseId || `CASE_${Date.now()}`;\n                caseData.caseId = caseId;\n                caseData.lastModified = new Date().toISOString();\n\n                // 檢查是否已存在，若有則覆蓋更新，若無則新增\n                const existingIndex = cases.findIndex(c => c.caseId === caseId);\n                if (existingIndex >= 0) {\n                    cases[existingIndex] = caseData;\n                } else {\n                    cases.push(caseData);\n                }\n                \n                store.set(\'cases\', cases);\n                return { success: true, caseId: caseId };\n            } catch(e) {\n                console.error(e);\n                return { success: false, message: e.message };\n            }\n        });\n\n        ipcMain.handle(\'get-all-cases\', async () => {\n            try {\n                if (!store) return { success: false, cases: [] };\n                const cases = store.get(\'cases\', []);\n                // 只回傳摘要資訊給清單顯示 (不回傳龐大的交易紀錄)\n                const summaryList = cases.map(c => ({\n                    caseId: c.caseId,\n                    caseName: c.caseName || \'未命名案件\',\n                    investigator: c.wsInvestigatorInfo || \'未知\',\n                    lastModified: c.lastModified,\n                    walletCount: (c.caseWallets || []).length,\n                    txCount: (c.caseTransactions || []).length\n                }));\n                // 依時間排序 (最新在上)\n                summaryList.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));\n                return { success: true, cases: summaryList };\n            } catch(e) {\n                return { success: false, message: e.message };\n            }\n        });\n\n        ipcMain.handle(\'load-case-internal\', async (event, caseId) => {\n            try {\n                if (!store) throw new Error(\'Store is not initialized.\');\n                const cases = store.get(\'cases\', []);\n                const targetCase = cases.find(c => c.caseId === caseId);\n                if (!targetCase) return { success: false, message: \'找不到該案件\' };\n                return { success: true, data: targetCase };\n            } catch(e) {\n                return { success: false, message: e.message };\n            }\n        });\n\n
-ipcMain.handle(\'save-file\', async (event, data, filename, mimeType) => {\n            try {\n                const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {\n                    title: \'儲存檔案\',\n                    defaultPath: filename,\n                    filters: [{ name: mimeType.split(\'/\')[1].toUpperCase() || \'File\', extensions: [mimeType.split(\'/\')[1] || \'*\'] }]\n                });\n                if (canceled || !filePath) return { success: false, message: \'使用者取消儲存。\' };\n\n                // Handle different data types (Buffer for images, string for text)\n                if (Buffer.isBuffer(data)) {\n                    fs.writeFileSync(filePath, data);\n                } else if (typeof data === \'string\') {\n                    fs.writeFileSync(filePath, data, \'utf-8\');\n                } else {\n                    // If data is a Data URL (e.g., \'data:image/png;base64,...\'), convert to Buffer\n                    if (typeof data === \'string\' && data.startsWith(\'data:\')) {\n                        const base64Data = data.split(\',\')[1];\n                        fs.writeFileSync(filePath, Buffer.from(base64Data, \'base64\'));\n                    } else if (data instanceof Uint8Array) { // If it\'s sent as Uint8Array (e.g., from ArrayBuffer)\n                        fs.writeFileSync(filePath, Buffer.from(data));\n                    }\n                    else {\n                        throw new Error(\'不支援的資料類型。\');\n                    }\n                }\n                return { success: true, filePath };\n            } catch (e) {\n                console.error(\'Save file failed:\', e);\n                return { success: false, message: e.message };\n            }\n        });\n\n\n        // Create the main window\n        createWindow();\n\n        app.on(\'activate\', () => {\n            // On macOS it\'s common to re-create a window in the app when the\n            // dock icon is clicked and there are no other windows open.\n            if (BrowserWindow.getAllWindows().length === 0) createWindow();\n        });\n\n    } catch (error) {\n        console.error(\'Failed to initialize application:\', error);\n        // Fallback or show an error screen to the user\n        dialog.showErrorBox(\'啟動錯誤\', `應用程式初始化失敗: ${error.message}`);\n        app.quit();\n    }\n});\n\napp.on(\'window-all-closed\', () => {\n    // Quit when all windows are closed, except on macOS. There, it\'s common\n    // for applications and their menu bar to stay active until the user quits\n    // explicitly with Cmd + Q.\n    if (process.platform !== \'darwin\') {\n        app.quit();\n    }\n});\n```
 
 
+// --- 歷史匯率 API 模組 ---
+async function fetchHistoricalRate(dateString, coinType = 'USDT') {
+    try {
+        // dateString format expected: "YYYY-MM-DD"
+        const targetDate = new Date(dateString + 'T00:00:00Z');
+        // Convert to seconds timestamp for Yahoo Finance
+        const start = Math.floor(targetDate.getTime() / 1000);
+        const end = start + 86400; // +1 day
+
+        // 1. Fetch Crypto to USD (e.g., USDT-USD, ETH-USD)
+        const coinSymbol = `${coinType.toUpperCase()}-USD`;
+        let coinUsdPrice = 1.0;
+        let coinCalcMethod = "Close Price";
+        try {
+            const coinRes = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${coinSymbol}?interval=1d&period1=${start}&period2=${end}`, { timeout: 8000 });
+            const quote = coinRes.data.chart.result[0].indicators.quote[0];
+            const high = quote.high.find(p => p !== null);
+            const low = quote.low.find(p => p !== null);
+
+            if (high !== undefined && low !== undefined) {
+                coinUsdPrice = (high + low) / 2;
+                coinCalcMethod = "Average of High/Low";
+            } else {
+                coinUsdPrice = quote.close.find(p => p !== null) || 1.0;
+            }
+        } catch(e) {
+            console.warn(`Could not parse ${coinSymbol}, defaulting to 1.0 USD`, e.message);
+        }
+
+        // 2. Fetch USD to TWD (Calculate Average of High and Low)
+        let usdTwdRate = 32.0; // fallback
+        let calculationMethod = "Close Price";
+        try {
+            const twdRes = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/USDTWD=X?interval=1d&period1=${start}&period2=${end}`, { timeout: 8000 });
+            const quote = twdRes.data.chart.result[0].indicators.quote[0];
+            const high = quote.high.find(p => p !== null);
+            const low = quote.low.find(p => p !== null);
+
+            if (high !== undefined && low !== undefined) {
+                usdTwdRate = (high + low) / 2;
+                calculationMethod = "Average of High/Low";
+            } else {
+                // Fallback to close if high/low are missing
+                usdTwdRate = quote.close.find(p => p !== null) || 32.0;
+            }
+        } catch(e) {
+            console.warn(`Could not parse USDTWD=X, defaulting to 32.0 TWD`, e.message);
+        }
+
+        // Calculate final Crypto to TWD rate
+        const finalTwdRate = (coinUsdPrice * usdTwdRate).toFixed(2);
+        
+        return { success: true, rate: finalTwdRate, details: `Crypto/USD: ${coinUsdPrice.toFixed(4)} (${coinCalcMethod}) * USD/TWD: ${usdTwdRate.toFixed(2)} (${calculationMethod})` };
+
+    } catch (error) {
+        console.error('Error fetching historical rate via Yahoo:', error.message);
+        return { success: false, message: error.message };
+    }
+}
+
+// --- API 測試模組 ---
+async function testEtherscanApiKey(apiKey) {
+    if (!apiKey || apiKey.length < 20) return { success: false, message: 'API Key 格式不正確或過短。' };
+    try {
+        const response = await axios.get('https://api.etherscan.io/api', { // Corrected to api.etherscan.io/api
+            params: {
+                module: 'account', action: 'balance',
+                address: '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae', // A known public address
+                tag: 'latest', apikey: apiKey
+            },
+            timeout: 8000
+        });
+        if (response.data?.status === '1' && response.data?.message === 'OK') {
+            return { success: true, message: 'Etherscan API Key 連線測試成功！' };
+        } else if (response.data?.status === '0') {
+            return { success: false, message: `測試失敗: ${response.data.result}` };
+        }
+        return { success: false, message: '收到未預期的 Etherscan API 響應格式。' };
+    } catch (error) {
+        return { success: false, message: `連線測試失敗: ${error.message}` };
+    }
+}
+
+async function testTronscanApiKey(apiKey) {
+    if (!apiKey || apiKey.length < 20) return { success: false, message: 'API Key 格式不正確或過短。' };
+    try {
+        const response = await axios.get('https://apilist.tronscanapi.com/api/accountv2', {
+            params: { address: 'TE2RzoSV3wFK99w6J9UnnZ4vLfXYoxvRwP' }, // Tether USDT Contract Address as test target
+            headers: { 'TRON-PRO-API-KEY': apiKey },
+            timeout: 8000
+        });
+        
+        // Tronscan API successful response check (basic heuristic)
+        if (response.data && response.data.address) {
+            return { success: true, message: 'Tronscan API Key 連線測試成功！' };
+        }
+        return { success: false, message: '收到未預期的 Tronscan API 響應格式。' };
+    } catch (error) {
+        // Tronscan usually returns 401/403 for invalid keys
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            return { success: false, message: '測試失敗: 無效的 Tronscan API Key 或權限不足。' };
+        }
+        return { success: false, message: `連線測試失敗: ${error.message}` };
+    }
+}
+
+// --- 錢包初勘模組 (Wallet Profiling) ---
+async function analyzeWalletEtherscan(apiKey, address) {
+    try {
+        // 1. Get Normal Txs
+        const normalRes = await axios.get('https://api.etherscan.io/api', { // Corrected to api.etherscan.io/api
+            params: { module: 'account', action: 'txlist', address: address, startblock: 0, endblock: 99999999, sort: 'asc', apikey: apiKey },
+            timeout: 8000
+        });
+        const normalTxs = Array.isArray(normalRes.data.result) ? normalRes.data.result : [];
+        
+        let firstTx = normalTxs.length > 0 ? normalTxs[0] : null;
+        let ethInCount = 0, ethOutCount = 0;
+        let ethInVol = 0, ethOutVol = 0;
+        let gasSources = {};
+        let approvals = 0;
+
+        for (const tx of normalTxs) {
+            const toAddr = tx.to || '';
+            const fromAddr = tx.from || '';
+            
+            if (toAddr.toLowerCase() === address.toLowerCase()) {
+                ethInCount++;
+                ethInVol += parseFloat(tx.value);
+                gasSources[fromAddr] = (gasSources[fromAddr] || 0) + parseFloat(tx.value);
+            } else if (fromAddr.toLowerCase() === address.toLowerCase()) {
+                ethOutCount++;
+                ethOutVol += parseFloat(tx.value);
+                if (tx.input && tx.input.startsWith('0x095ea7b3')) approvals++; // ERC20 approve signature
+            }
+        }
+        
+        let topGasSource = null;
+        let maxGas = 0;
+        for (const [addr, val] of Object.entries(gasSources)) {
+            if (val > maxGas) { maxGas = val; topGasSource = addr; }
+        }
+
+        // 2. Get Token Txs (for USDT)
+        const tokenRes = await axios.get('https://api.etherscan.io/api', { // Corrected to api.etherscan.io/api
+            params: { module: 'account', action: 'tokentx', address: address, startblock: 0, endblock: 99999999, sort: 'asc', apikey: apiKey },
+            timeout: 8000
+        });
+        const tokenTxs = Array.isArray(tokenRes.data.result) ? tokenRes.data.result : [];
+        
+        let usdtInCount = 0, usdtOutCount = 0;
+        let usdtInVol = 0, usdtOutVol = 0;
+
+        for (const tx of tokenTxs) {
+            // Assuming USDT has tokenSymbol 'USDT' and 6 decimals
+            if (tx.tokenSymbol === 'USDT' || tx.tokenName?.toLowerCase().includes('tether')) {
+                const toAddr = tx.to || '';
+                const fromAddr = tx.from || '';
+                if (toAddr.toLowerCase() === address.toLowerCase()) {
+                    usdtInCount++;
+                    usdtInVol += parseFloat(tx.value); // Value already normalized by Etherscan for tokentx
+                } else if (fromAddr.toLowerCase() === address.toLowerCase()) {
+                    usdtOutCount++;
+                    usdtOutVol += parseFloat(tx.value); // Value already normalized by Etherscan for tokentx
+                }
+            }
+        }
+        return {
+            success: true,
+            provider: 'Etherscan',
+            profile: {
+                activation_time: firstTx ? new Date(parseInt(firstTx.timeStamp) * 1000).toLocaleString() : '無紀錄',
+                // first_gas_source: firstTx ? firstTx.from : '無', // This might not be the actual gas source, but the sender of the first tx
+                eth_in_count: ethInCount,
+                eth_out_count: ethOutCount,
+                eth_in_vol: (ethInVol / 1e18).toFixed(6),
+                eth_out_vol: (ethOutVol / 1e18).toFixed(6),
+                usdt_in_count: usdtInCount,
+                usdt_out_count: usdtOutCount,
+                usdt_in_vol: (usdtInVol / 1e6).toFixed(2), // USDT typically 6 decimals
+                usdt_out_vol: (usdtOutVol / 1e6).toFixed(2), // USDT typically 6 decimals
+                top_gas_source: topGasSource || '無',
+                top_gas_amount: (maxGas / 1e18).toFixed(6),
+                approvals_count: approvals,
+                total_normal_txs: normalTxs.length,
+                total_token_txs: tokenTxs.length
+            }
+        };
+
+    } catch (error) {
+        console.error('Error analyzing wallet:', error.message);
+        return { success: false, message: `初勘失敗: ${error.message}` };
+    }
+}
+
+// --- Tronscan API 模組 ---
+async function analyzeWalletTronscan(apiKey, address) {
+    try {
+        const headers = apiKey ? { 'TRON-PRO-API-KEY': apiKey } : {};
+        let actTime = '無紀錄 (API 限制)';
+        let approvals = "尚未支援 (TRX)"; // Tronscan API doesn't directly provide ERC20 approvals in this format
+        let topGas = '無';
+
+        try {
+            // Get account info for activation and approvals
+            const resInfo = await axios.get('https://apilist.tronscanapi.com/api/accountv2', {
+                params: { address: address },
+                headers: headers,
+                timeout: 8000
+            });
+            const data = resInfo.data;
+            if (data.date_created && data.date_created > 0) {
+                const d = new Date(data.date_created);
+                actTime = `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+            }
+        } catch(e) {
+            console.warn("Tronscan accountv2 API failed, might require Pro API Key:", e.message);
+        }
+
+        try {
+            // Get top gas source from normal txs (simplified for TRX)
+            const resTxs = await axios.get('https://apilist.tronscanapi.com/api/transaction', {
+                params: { sort: '-timestamp', count: true, limit: 50, start: 0, address: address },
+                headers: headers,
+                timeout: 8000
+            });
+            if (resTxs.data && resTxs.data.data) {
+                const funders = {};
+                resTxs.data.data.forEach(tx => {
+                    // For TRX, the "gas source" is typically the sender of an incoming TRX transaction.
+                    // This is a simplification; a full analysis would be more complex.
+                    if (tx.toAddress === address && tx.contractData && tx.contractData.amount && tx.contractType === 0) { // contractType 0 is TRX transfer
+                        funders[tx.ownerAddress] = (funders[tx.ownerAddress] || 0) + parseFloat(tx.contractData.amount);
+                    }
+                });
+                if (Object.keys(funders).length > 0) {
+                    topGas = Object.keys(funders).reduce((a, b) => funders[a] > funders[b] ? a : b);
+                }
+            }
+        } catch(e) {
+            console.warn("Tronscan transaction API failed:", e.message);
+        }
+
+        return {
+            success: true,
+            profile: {
+                activation_time: actTime,
+                top_gas_source: topGas,
+                approvals_count: approvals // Placeholder for now
+            }
+        };
+    } catch (error) {
+        return { success: false, message: 'Tronscan 分析失敗: ' + error.message };
+    }
+}
+
+async function fetchEtherscanTransactions(apiKey, address) {
+    const ETHERSCAN_API_URL = 'https://api.etherscan.io/api'; // Corrected to api.etherscan.io/api
+    try {
+        const response = await axios.get(ETHERSCAN_API_URL, {
+            params: {
+                module: 'account',
+                action: 'txlist',
+                address: address,
+                startblock: 0,
+                endblock: 99999999,
+                page: 1,
+                offset: 50, // Fetch up to 50 latest transactions
+                sort: 'desc',
+                apikey: apiKey
+            },
+            timeout: 8000
+        });
+
+        if (response.data?.status === '1' && response.data?.message === 'OK') {
+            // Etherscan returns transaction list in the result array
+            return { success: true, transactions: response.data.result };
+        } else if (response.data?.status === '0') {
+            return { success: false, message: `查詢失敗: ${response.data.result}` };
+        }
+        return { success: false, message: '收到未預期的 Etherscan API 響應格式。' };
+
+    } catch (error) {
+        console.error('Error fetching Etherscan transactions:', error.message);
+        return { success: false, message: `查詢失敗 (網路或伺服器錯誤): ${error.message}` };
+    }
+}
+
+async function fetchTransactionsTronscan(apiKey, address) {
+    try {
+        const headers = apiKey ? { 'TRON-PRO-API-KEY': apiKey } : {};
+        // Fetch TRC20 transfers (most common for USDT)
+        const response = await axios.get('https://apilist.tronscanapi.com/api/token_trc20/transfers', {
+            params: {
+                limit: 50,
+                start: 0,
+                sort: '-timestamp',
+                count: true,
+                relatedAddress: address
+            },
+            headers: headers,
+            timeout: 8000
+        });
+
+        if (response.data && response.data.token_transfers) {
+            const txs = response.data.token_transfers.map(tx => ({
+                timeStamp: Math.floor(tx.block_ts / 1000),
+                from: tx.from_address,
+                to: tx.to_address,
+                value: tx.quant, // This is raw value, needs to be divided by decimals
+                // USDT has 6 decimals on TRON. We will assume 6 if not explicitly found.
+                decimals: (tx.tokenInfo && tx.tokenInfo.tokenDecimal !== undefined) ? tx.tokenInfo.tokenDecimal : 6,
+                symbol: (tx.tokenInfo && tx.tokenAbbr) ? tx.tokenInfo.tokenAbbr : 'USDT'
+            }));
+            
+            return {
+                success: true,
+                transactions: txs,
+                isHighVolume: response.data.total >= 1000,
+                totalFetched: response.data.total
+            };
+        }
+        return { success: true, transactions: [], isHighVolume: false, totalFetched: 0 };
+    } catch (error) {
+        return { success: false, message: 'Tronscan 交易獲取失敗: ' + error.message };
+    }
+}
+
+// --- Electron 視窗創建 ---
+function createWindow() {
+    mainWindow = new BrowserWindow({
+        width: 1200, // Increased width for better dashboard layout
+        height: 800, // Increased height
+        minWidth: 800,
+        minHeight: 600,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: false,
+            contextIsolation: true,
+            webSecurity: false 
+        },
+        show: false // Don't show until ready
+    });
+
+    mainWindow.loadFile(path.join(__dirname, 'index.html'));
+
+    // Show window when content is ready
+    mainWindow.once('ready-to-show', () => {
+        mainWindow.show();
+        // mainWindow.webContents.openDevTools(); // Optional: Open DevTools for debugging
+    });
+}
+
+// --- App 生命周期事件 ---
+app.whenReady().then(async () => {
+    try {
+        // Initialize electron-store
+        const Store = (await import('electron-store')).default; // Dynamically import Store
+        store = new Store();
+        console.log('electron-store initialized successfully.');
+
+        // IPC Handlers should be defined here, after store is initialized.
+        // --- IPC 處理器 ---
+        ipcMain.handle('setup-system', async (event, { userProfile, masterPassword, apiKeys }) => {
+            try {
+                if (!store) throw new Error('Store is not initialized.');
+                const dataString = JSON.stringify(apiKeys);
+                const encryptedData = encrypt(dataString, masterPassword);
+                
+                store.set('userProfile', userProfile);
+                store.set('encryptedApiKeys', encryptedData);
+                store.set('systemConfigured', true);
+                
+                console.log(`[Audit Log] System initialized and keys bound for user: ${userProfile.name} (Phone: ${userProfile.phone})`);
+                
+                return { success: true };
+            } catch (error) {
+                console.error('Setup failed:', error);
+                return { success: false, message: error.message };
+            }
+        });
+
+        ipcMain.handle('login-system', async (event, masterPassword) => {
+            try {
+                if (!store) throw new Error('Store is not initialized.');
+                const encryptedData = store.get('encryptedApiKeys');
+                if (!encryptedData) return { success: false, message: 'System not configured.' };
+                
+                const decryptedString = decrypt(encryptedData, masterPassword);
+                const apiKeys = JSON.parse(decryptedString);
+                const userProfile = store.get('userProfile', {});
+                
+                console.log(`[Audit Log] User ${userProfile.name} (Phone: ${userProfile.phone}) logged in successfully.`);
+                
+                return { success: true, apiKeys, userProfile };
+            } catch (error) {
+                console.error('Login failed:', error);
+                return { success: false, message: '密碼錯誤或資料損壞。' };
+            }
+        });
+
+        ipcMain.handle('test-api-key', async (event, { provider, apiKey }) => {
+            if (provider === 'etherscan') return testEtherscanApiKey(apiKey);
+            if (provider === 'tronscan') return testTronscanApiKey(apiKey);
+            return { success: false, message: `Unsupported provider: ${provider}` };
+        });
+
+        ipcMain.handle('fetch-transactions', async (event, { provider, address, apiKeys }) => {
+            if (provider === 'etherscan') {
+                if (!apiKeys || !apiKeys.etherscan) return { success: false, message: '未配置 Etherscan API Key。' };
+                return fetchEtherscanTransactions(apiKeys.etherscan, address);
+            }
+            if (provider === 'tronscan') {
+                if (!apiKeys || !apiKeys.tronscan) return { success: false, message: '未配置 Tronscan API Key。' };
+                return fetchTransactionsTronscan(apiKeys.tronscan, address);
+            }
+            return { success: false, message: `尚未支援 ${provider} 的查詢。` };
+        });
+
+        ipcMain.handle('get-historical-rate', async (event, dateString, coinType) => {
+            return await fetchHistoricalRate(dateString, coinType);
+        });
+
+        ipcMain.handle('analyze-wallet', async (event, { provider, address, apiKeys }) => {
+            if (provider === 'etherscan') {
+                if (!apiKeys || !apiKeys.etherscan) return { success: false, message: '未配置 Etherscan API Key。' };
+                return analyzeWalletEtherscan(apiKeys.etherscan, address);
+            } else if (provider === 'tronscan') {
+                return analyzeWalletTronscan(apiKeys ? apiKeys.tronscan : null, address);
+            }
+            return { success: false, message: `尚未支援 ${provider} 的初勘。` };
+        });
+
+        // --- 內部案件資料庫管理 (Internal Case Database) ---
+        ipcMain.handle('save-case-internal', async (event, caseData) => {
+            try {
+                if (!store) throw new Error('Store is not initialized.');
+                
+                // 取得現有案件庫 (Array of cases)
+                let cases = store.get('cases', []);
+                
+                // 確保有案號或唯一 ID
+                const caseId = caseData.caseId || `CASE_${Date.now()}`;
+                caseData.caseId = caseId;
+                caseData.lastModified = new Date().toISOString();
+
+                // 檢查是否已存在，若有則覆蓋更新，若無則新增
+                const existingIndex = cases.findIndex(c => c.caseId === caseId);
+                if (existingIndex >= 0) {
+                    cases[existingIndex] = caseData;
+                } else {
+                    cases.push(caseData);
+                }
+                
+                store.set('cases', cases);
+                return { success: true, caseId: caseId };
+            } catch(e) {
+                console.error(e);
+                return { success: false, message: e.message };
+            }
+        });
+
+        ipcMain.handle('get-all-cases', async () => {
+            try {
+                if (!store) return { success: false, cases: [] };
+                const cases = store.get('cases', []);
+                // 只回傳摘要資訊給清單顯示 (不回傳龐大的交易紀錄)
+                const summaryList = cases.map(c => ({
+                    caseId: c.caseId,
+                    caseName: c.caseName || '未命名案件',
+                    investigator: c.wsInvestigatorInfo || '未知',
+                    lastModified: c.lastModified,
+                    walletCount: (c.caseWallets || []).length,
+                    txCount: (c.caseTransactions || []).length
+                }));
+                // 依時間排序 (最新在上)
+                summaryList.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+                return { success: true, cases: summaryList };
+            } catch(e) {
+                return { success: false, message: e.message };
+            }
+        });
+
+        ipcMain.handle('load-case-internal', async (event, caseId) => {
+            try {
+                if (!store) throw new Error('Store is not initialized.');
+                const cases = store.get('cases', []);
+                const targetCase = cases.find(c => c.caseId === caseId);
+                if (!targetCase) return { success: false, message: '找不到該案件' };
+                return { success: true, data: targetCase };
+            } catch(e) {
+                return { success: false, message: e.message };
+            }
+        });
+
+
+        ipcMain.handle('save-file', async (event, data, filename, mimeType) => {
+            try {
+                const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+                    title: '儲存檔案',
+                    defaultPath: filename,
+                    filters: [{ name: mimeType.split('/')[1].toUpperCase() || 'File', extensions: [mimeType.split('/')[1] || '*'] }]
+                });
+                if (canceled || !filePath) return { success: false, message: '使用者取消儲存。' };
+
+                // Handle different data types (Buffer for images, string for text)
+                if (Buffer.isBuffer(data)) {
+                    fs.writeFileSync(filePath, data);
+                } else if (typeof data === 'string') {
+                    fs.writeFileSync(filePath, data, 'utf-8');
+                } else {
+                    // If data is a Data URL (e.g., 'data:image/png;base64,...'), convert to Buffer
+                    if (typeof data === 'string' && data.startsWith('data:')) {
+                        const base64Data = data.split(',')[1];
+                        fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+                    } else if (data instanceof Uint8Array) { // If it's sent as Uint8Array (e.g., from ArrayBuffer)
+                        fs.writeFileSync(filePath, Buffer.from(data));
+                    }
+                    else {
+                        throw new Error('不支援的資料類型。');
+                    }
+                }
+                return { success: true, filePath };
+            } catch (e) {
+                console.error('Save file failed:', e);
+                return { success: false, message: e.message };
+            }
+        });
+
+
+        // Create the main window
+        createWindow();
+
+        app.on('activate', () => {
+            // On macOS it's common to re-create a window in the app when the
+            // dock icon is clicked and there are no other windows open.
+            if (BrowserWindow.getAllWindows().length === 0) createWindow();
+        });
+
+    } catch (error) {
+        console.error('Failed to initialize application:', error);
+        // Fallback or show an error screen to the user
+        dialog.showErrorBox('啟動錯誤', `應用程式初始化失敗: ${error.message}`);
+        app.quit();
+    }
+});
+
+app.on('window-all-closed', () => {
+    // Quit when all windows are closed, except on macOS. There, it's common
+    // for applications and their menu bar to stay active until the user quits
+    // explicitly with Cmd + Q.
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
+});
