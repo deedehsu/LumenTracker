@@ -36,10 +36,12 @@ const uiLogicPath = './ui_logic/';
  */
 async function loadScreen(screenName, callback) {
     try {
+        console.log(`[loadScreen] Attempting to load screen: ${screenName}`);
         // Remove any existing UI-specific script to prevent multiple bindings or memory leaks
         const oldLogicScript = document.getElementById('ui-logic-script');
         if (oldLogicScript) {
             oldLogicScript.remove();
+            console.log('[loadScreen] Removed old UI logic script.');
         }
 
         // Fetch HTML content for the screen
@@ -51,11 +53,17 @@ async function loadScreen(screenName, callback) {
         const mainContentArea = document.getElementById('main-content-area');
         if (mainContentArea) {
             mainContentArea.innerHTML = html;
+            console.log(`[loadScreen] HTML loaded for screen: ${screenName}.`);
 
             // After content is loaded, find the root element (the first child) and show it
             const loadedScreenRoot = mainContentArea.firstElementChild;
             if (loadedScreenRoot) {
                 loadedScreenRoot.classList.remove('hidden');
+                // Force display to block to override !important if present
+                loadedScreenRoot.style.display = 'block';
+                console.log(`[loadScreen] Loaded screen root element found. Class 'hidden' removed, display set to 'block'.`);
+            } else {
+                console.warn(`[loadScreen] No first element child found for screen ${screenName}.`);
             }
 
             // Load UI-specific logic script
@@ -63,6 +71,7 @@ async function loadScreen(screenName, callback) {
             logicScript.id = 'ui-logic-script';
             logicScript.src = `${uiLogicPath}${screenName}_logic.js`;
             logicScript.onload = () => {
+                console.log(`[loadScreen] UI logic script loaded for screen: ${screenName}.`);
                 // After logic is loaded, ensure global states are accessible within the new context
                 window.currentLumenApiKeys = currentLumenApiKeys;
                 window.tempUserProfile = tempUserProfile;
@@ -76,7 +85,8 @@ async function loadScreen(screenName, callback) {
                 }
             };
             logicScript.onerror = (e) => {
-                console.warn(`Failed to load logic for ${screenName}:`, e);
+                console.error(`[loadScreen] Failed to load logic for ${screenName}:`, e);
+                alert(`載入 ${screenName} 的邏輯失敗。請檢查控制台。`);
                 if (callback && typeof callback === 'function') {
                     callback(); // Still call callback even if logic fails to load
                 }
@@ -84,11 +94,11 @@ async function loadScreen(screenName, callback) {
             document.body.appendChild(logicScript);
         }
         // Hide any global error messages when switching screens
-	document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
 
     } catch (error) {
-        console.error(`Error loading screen ${screenName}:`, error);
-alert(`無法載入畫面：${screenName}.html。錯誤：${error.message}`);
+        console.error(`[loadScreen] Error loading screen ${screenName}:`, error);
+        alert(`無法載入畫面：${screenName}.html。錯誤：${error.message}`);
     }
 }
 
@@ -98,8 +108,12 @@ window.loadScreen = loadScreen;
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        console.log('[DOMContentLoaded] Checking system status...');
         const status = await api.checkSystemStatus();
-        if (status.systemConfigured) {
+        console.log('[DOMContentLoaded] System status:', status);
+
+        if (status.success && status.systemConfigured) {
+            console.log('[DOMContentLoaded] System configured. Loading login screen.');
             // Not first run -> Go to Login
             currentUserProfile = status.userProfile;
             window.currentUserProfile = currentUserProfile; // Update global
@@ -114,11 +128,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         } else {
+            console.log('[DOMContentLoaded] System not configured. Loading welcome screen.');
             // First run -> Go to Welcome
             loadScreen('welcome');
         }
     } catch(e) {
-        console.error('Init error:', e);
+        console.error('[DOMContentLoaded] Init error:', e);
+        alert(`應用程式初始化失敗：${e.message}。載入歡迎畫面。`);
         loadScreen('welcome');
     }
 });
