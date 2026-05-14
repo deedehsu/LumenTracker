@@ -93,7 +93,7 @@ window.loadScreen = loadScreen;
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const status = await api.checkSystemStatus();
-        if (status.isConfigured) {
+        if (status.systemConfigured) {
             // Not first run -> Go to Login
             currentUserProfile = status.userProfile;
             window.currentUserProfile = currentUserProfile; // Update global
