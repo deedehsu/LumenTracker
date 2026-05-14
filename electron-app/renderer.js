@@ -52,6 +52,12 @@ async function loadScreen(screenName, callback) {
         if (mainContentArea) {
             mainContentArea.innerHTML = html;
 
+            // After content is loaded, find the root element (the first child) and show it
+            const loadedScreenRoot = mainContentArea.firstElementChild;
+            if (loadedScreenRoot) {
+                loadedScreenRoot.classList.remove('hidden');
+            }
+
             // Load UI-specific logic script
             const logicScript = document.createElement('script');
             logicScript.id = 'ui-logic-script';
